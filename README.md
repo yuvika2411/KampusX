@@ -54,7 +54,7 @@ The application is built using **Next.js, Spring Boot, PostgreSQL, Cloudinary, a
 - React
 - JavaScript / TypeScript
 - Axios
-- Tailwind CSS
+- CSS / Tailwind CSS
 - REST API Integration
 
 ### Backend
@@ -114,15 +114,57 @@ Students can vote on issues they are also facing, helping highlight problems aff
 
 The issue workflow is:
 
-```text
-Student Reports Issue
-        ↓
-Issue Created
-        ↓
-Students Vote / Support
-        ↓
-Resolver Handles Issue
-        ↓
-Issue Status Updated
-        ↓
+Student Reports Issue  
+↓  
+Issue Created  
+↓  
+Students Vote / Support  
+↓  
+Resolver Handles Issue  
+↓  
+Issue Status Updated  
+↓  
 Admin Monitors
+
+---
+
+## Application Workflow
+
+User Registration / Login  
+↓  
+JWT Token  
+↓  
+Role Identification  
+↓  
+Student / Resolver / Admin  
+↓  
+Student → Issues, Posts, Chat, Comments  
+↓  
+Resolver → Handle Issues, Update Status  
+↓  
+Admin → Manage Platform  
+↓  
+PostgreSQL + Cloudinary
+
+---
+
+## Developer
+
+**Yuvika Jindal**  
+**Shubham Bhatt**
+
+**GitHub:**  
+https://github.com/yuvika2411  
+https://github.com/Shubham-12bhatt
+
+**LinkedIn:**  
+https://www.linkedin.com/in/yuvika-jindal-6b3181328/  
+https://www.linkedin.com/in/shubham-bhatt-b59a19328/
+
+---
+
+## Support
+
+If you found this project helpful, consider giving it a ⭐ on GitHub.
+
+#KampusX #CampusIssueReporting #StudentPlatform #NextJS #SpringBoot #PostgreSQL #Cloudinary #Docker
