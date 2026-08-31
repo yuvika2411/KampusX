@@ -1,0 +1,66 @@
+package com.kampusx.issue.controller;
+
+import com.kampusx.issue.service.IssueService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import com.kampusx.issue.dto.CreateIssueRequest;
+import com.kampusx.issue.dto.IssueResponse;
+import com.kampusx.user.entity.User;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/issues")
+@RequiredArgsConstructor
+public class IssueController {
+
+    private final IssueService issueService;
+
+    @PostMapping
+    public ResponseEntity<IssueResponse> createIssue(
+            @RequestBody CreateIssueRequest request) {
+
+        // Temporary reporter — authentication aane ke baad
+        // actual logged-in user yahan se milega.
+        User reporter = new User();
+        reporter.setId(1L);
+
+        return ResponseEntity.ok(
+                issueService.createIssue(request)
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<List<IssueResponse>> getAllIssues() {
+        return ResponseEntity.ok(issueService.getAllIssues());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<IssueResponse> getIssueById(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                issueService.getIssueById(id)
+        );
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<IssueResponse> updateIssue(
+            @PathVariable Long id,
+            @RequestBody CreateIssueRequest request) {
+
+        return ResponseEntity.ok(
+                issueService.updateIssue(id, request)
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteIssue(@PathVariable Long id) {
+        issueService.deleteIssue(id);
+    }
+}
