@@ -54,7 +54,7 @@ The application is built using **Next.js, Spring Boot, PostgreSQL, Cloudinary, a
 - React
 - JavaScript / TypeScript
 - Axios
-- CSS / Tailwind CSS
+- Tailwind CSS
 - REST API Integration
 
 ### Backend
@@ -126,49 +126,3 @@ Resolver Handles Issue
 Issue Status Updated
         ↓
 Admin Monitors
-
----
-
-## Application Workflow
-
-```
-User Registration / Login
-          ↓
-      JWT Token
-          ↓
-    Role Identification
-          ↓
-   ┌──────┼──────┐
-   ↓      ↓      ↓
-Student Resolver Admin
-   ↓      ↓      ↓
-Issues   Handle   Manage
-Posts    Issues   Platform
-Chat     Status
-Comments
-   ↓
- PostgreSQL
-   +
-Cloudinary
-
----
-
-## Developer
-
-**Yuvika Jindal**
-**Shubham Bhatt**
-
-**GitHub:**  
-https://github.com/yuvika2411
-https://github.com/Shubham-12bhatt
-
-
-**LinkedIn:**  
-https://www.linkedin.com/in/yuvika-jindal-6b3181328/
-https://www.linkedin.com/in/shubham-bhatt-b59a19328/
-
----
-
-## Support
-
-If you found this project helpful, consider giving it a ⭐ on GitHub.
