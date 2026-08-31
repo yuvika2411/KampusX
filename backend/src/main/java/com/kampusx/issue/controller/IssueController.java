@@ -2,6 +2,7 @@ package com.kampusx.issue.controller;
 
 import com.kampusx.issue.service.IssueService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.kampusx.issue.dto.CreateIssueRequest;
 import com.kampusx.issue.dto.IssueResponse;
@@ -21,6 +22,7 @@ public class IssueController {
 
     private final IssueService issueService;
 
+    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping
     public ResponseEntity<IssueResponse> createIssue(
             @RequestBody CreateIssueRequest request) {
@@ -35,11 +37,13 @@ public class IssueController {
         );
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     public ResponseEntity<List<IssueResponse>> getAllIssues() {
         return ResponseEntity.ok(issueService.getAllIssues());
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public ResponseEntity<IssueResponse> getIssueById(
             @PathVariable Long id) {
@@ -49,6 +53,7 @@ public class IssueController {
         );
     }
 
+    @PreAuthorize("hasAnyRole('RESOLVER', 'ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<IssueResponse> updateIssue(
             @PathVariable Long id,
@@ -59,6 +64,7 @@ public class IssueController {
         );
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public void deleteIssue(@PathVariable Long id) {
         issueService.deleteIssue(id);
