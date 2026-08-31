@@ -131,7 +131,7 @@ Admin Monitors
 
 ## Application Workflow
 
-```text
+```
 User Registration / Login
           ↓
       JWT Token
