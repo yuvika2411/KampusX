@@ -28,6 +28,7 @@ public class IssueService {
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
         issue.setCategory(request.getCategory());
+        issue.setLocationType(request.getLocationType());
         issue.setLocation(request.getLocation());
         issue.setPriority(request.getPriority());
         issue.setAffectedUsers(request.getAffectedUsers());
@@ -58,6 +59,7 @@ public class IssueService {
         response.setTitle(issue.getTitle());
         response.setDescription(issue.getDescription());
         response.setCategory(issue.getCategory());
+        response.setLocationType(issue.getLocationType());
         response.setLocation(issue.getLocation());
         response.setPriority(issue.getPriority());
         response.setStatus(issue.getStatus());
@@ -90,6 +92,7 @@ public class IssueService {
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
         issue.setCategory(request.getCategory());
+        issue.setLocationType(request.getLocationType());
         issue.setLocation(request.getLocation());
         issue.setPriority(request.getPriority());
         issue.setAffectedUsers(request.getAffectedUsers());

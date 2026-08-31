@@ -38,6 +38,10 @@ public class Issue {
     @Column(nullable = false)
     private IssueCategory category;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LocationType locationType;
+
     @Column(nullable = false)
     private String location;
 }

@@ -38,30 +38,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
-        String email = jwtService.extractEmail(token);
+        try {
+            String email = jwtService.extractEmail(token);
 
-        if (email != null &&
-                SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (email != null &&
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            User user = userRepository.findByEmail(email)
-                    .orElse(null);
+                User user = userRepository.findByEmail(email)
+                        .orElse(null);
 
-            if (user != null && jwtService.isTokenValid(token, user.getEmail())) {
+                if (user != null && jwtService.isTokenValid(token, user.getEmail())) {
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                user,
-                                null,
-                                java.util.List.of(
-                                        new org.springframework.security.core.authority.SimpleGrantedAuthority(
-                                                "ROLE_" + user.getRole().name()
-                                        )
-                                )
-                        );
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    user,
+                                    null,
+                                    null
+                            );
 
-                SecurityContextHolder.getContext()
-                        .setAuthentication(authentication);
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(authentication);
+                }
             }
+
+        } catch (Exception e) {
+            // Invalid JWT - don't crash the application
         }
 
         filterChain.doFilter(request, response);

@@ -3,6 +3,7 @@ package com.kampusx.issue.dto;
 import com.kampusx.issue.entity.IssueCategory;
 import com.kampusx.issue.entity.IssuePriority;
 import com.kampusx.issue.entity.IssueStatus;
+import com.kampusx.issue.entity.LocationType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,6 +18,7 @@ public class IssueResponse {
     private IssuePriority priority;
     private Integer affectedUsers;
     private IssueCategory category;
+    private LocationType locationType;
     private String location;
     private Long reporterId;
 }
