@@ -9,11 +9,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -41,28 +43,45 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String email = jwtService.extractEmail(token);
 
+            System.out.println("JWT EMAIL: " + email);
+
             if (email != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 User user = userRepository.findByEmail(email)
                         .orElse(null);
 
+                System.out.println("USER FOUND: " + (user != null));
+
                 if (user != null && jwtService.isTokenValid(token, user.getEmail())) {
+
+                    SimpleGrantedAuthority authority =
+                            new SimpleGrantedAuthority(
+                                    "ROLE_" + user.getRole().name()
+                            );
+
+                    System.out.println("USER ROLE: " + user.getRole());
+                    System.out.println("AUTHORITY: " + authority.getAuthority());
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    user,
+                                    user.getEmail(),
                                     null,
-                                    null
+                                    List.of(authority)
                             );
 
                     SecurityContextHolder.getContext()
                             .setAuthentication(authentication);
+
+                    System.out.println("AUTHENTICATION SET: "
+                            + SecurityContextHolder.getContext()
+                            .getAuthentication().isAuthenticated());
                 }
             }
 
         } catch (Exception e) {
-            // Invalid JWT - don't crash the application
+            System.out.println("JWT ERROR: " + e.getMessage());
+            e.printStackTrace();
         }
 
         filterChain.doFilter(request, response);

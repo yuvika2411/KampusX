@@ -1,17 +1,12 @@
 package com.kampusx.issue.controller;
 
-import com.kampusx.issue.service.IssueService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
 import com.kampusx.issue.dto.CreateIssueRequest;
 import com.kampusx.issue.dto.IssueResponse;
-import com.kampusx.user.entity.User;
+import com.kampusx.issue.service.IssueService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -26,11 +21,6 @@ public class IssueController {
     @PostMapping
     public ResponseEntity<IssueResponse> createIssue(
             @RequestBody CreateIssueRequest request) {
-
-        // Temporary reporter — authentication aane ke baad
-        // actual logged-in user yahan se milega.
-        User reporter = new User();
-        reporter.setId(1L);
 
         return ResponseEntity.ok(
                 issueService.createIssue(request)
@@ -53,7 +43,7 @@ public class IssueController {
         );
     }
 
-    @PreAuthorize("hasAnyRole('RESOLVER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CATEGORY_HEAD', 'RESOLVER', 'ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<IssueResponse> updateIssue(
             @PathVariable Long id,

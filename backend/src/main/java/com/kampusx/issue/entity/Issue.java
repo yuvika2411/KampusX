@@ -34,9 +34,9 @@ public class Issue {
     @JoinColumn(name = "reporter_id", nullable = false)
     private User reporter;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private IssueCategory category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -44,4 +44,8 @@ public class Issue {
 
     @Column(nullable = false)
     private String location;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "resolver_id")
+    private User resolver;
 }
