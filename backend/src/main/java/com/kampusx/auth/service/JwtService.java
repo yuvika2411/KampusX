@@ -20,7 +20,6 @@ public class JwtService {
     );
 
     public String generateToken(String email) {
-
         return Jwts.builder()
                 .subject(email)
                 .issuedAt(new Date())
@@ -30,12 +29,10 @@ public class JwtService {
     }
 
     public String extractEmail(String token) {
-
         return extractAllClaims(token).getSubject();
     }
 
     public boolean isTokenValid(String token, String email) {
-
         String tokenEmail = extractEmail(token);
 
         return tokenEmail.equals(email)
@@ -43,14 +40,12 @@ public class JwtService {
     }
 
     private boolean isTokenExpired(String token) {
-
         return extractAllClaims(token)
                 .getExpiration()
                 .before(new Date());
     }
 
     private Claims extractAllClaims(String token) {
-
         return Jwts.parser()
                 .verifyWith(key)
                 .build()

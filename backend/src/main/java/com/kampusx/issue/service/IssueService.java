@@ -2,12 +2,16 @@ package com.kampusx.issue.service;
 
 import com.kampusx.issue.dto.CreateIssueRequest;
 import com.kampusx.issue.dto.IssueResponse;
+import com.kampusx.issue.entity.Category;
 import com.kampusx.issue.entity.Issue;
+import com.kampusx.issue.repository.CategoryRepository;
 import com.kampusx.issue.repository.IssueRepository;
 import com.kampusx.user.entity.User;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import com.kampusx.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -17,17 +21,26 @@ public class IssueService {
 
     private final IssueRepository issueRepository;
     private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
 
     public IssueResponse createIssue(CreateIssueRequest request) {
 
-        User reporter = userRepository.findById(request.getReporterId())
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        User reporter = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Reporter not found"));
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found"));
 
         Issue issue = new Issue();
 
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
-        issue.setCategory(request.getCategory());
+        issue.setCategory(category);
         issue.setLocationType(request.getLocationType());
         issue.setLocation(request.getLocation());
         issue.setPriority(request.getPriority());
@@ -36,19 +49,7 @@ public class IssueService {
 
         Issue savedIssue = issueRepository.save(issue);
 
-        IssueResponse response = new IssueResponse();
-
-        response.setId(savedIssue.getId());
-        response.setTitle(savedIssue.getTitle());
-        response.setDescription(savedIssue.getDescription());
-        response.setCategory(savedIssue.getCategory());
-        response.setLocation(savedIssue.getLocation());
-        response.setPriority(savedIssue.getPriority());
-        response.setStatus(savedIssue.getStatus());
-        response.setAffectedUsers(savedIssue.getAffectedUsers());
-        response.setReporterId(savedIssue.getReporter().getId());
-
-        return response;
+        return toResponse(savedIssue);
     }
 
     private IssueResponse toResponse(Issue issue) {
@@ -58,7 +59,8 @@ public class IssueService {
         response.setId(issue.getId());
         response.setTitle(issue.getTitle());
         response.setDescription(issue.getDescription());
-        response.setCategory(issue.getCategory());
+        response.setCategoryId(issue.getCategory().getId());
+        response.setCategoryName(issue.getCategory().getName());
         response.setLocationType(issue.getLocationType());
         response.setLocation(issue.getLocation());
         response.setPriority(issue.getPriority());
@@ -89,9 +91,12 @@ public class IssueService {
         Issue issue = issueRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Issue not found"));
 
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
-        issue.setCategory(request.getCategory());
+        issue.setCategory(category);
         issue.setLocationType(request.getLocationType());
         issue.setLocation(request.getLocation());
         issue.setPriority(request.getPriority());

@@ -1,6 +1,5 @@
 package com.kampusx.issue.dto;
 
-import com.kampusx.issue.entity.IssueCategory;
 import com.kampusx.issue.entity.IssuePriority;
 import com.kampusx.issue.entity.IssueStatus;
 import com.kampusx.issue.entity.LocationType;
@@ -17,8 +16,12 @@ public class IssueResponse {
     private IssueStatus status;
     private IssuePriority priority;
     private Integer affectedUsers;
-    private IssueCategory category;
+
+    private Long categoryId;
+    private String categoryName;
+
     private LocationType locationType;
     private String location;
+
     private Long reporterId;
 }
