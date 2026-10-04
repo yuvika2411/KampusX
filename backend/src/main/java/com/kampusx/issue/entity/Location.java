@@ -5,10 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "location_types")
+@Table(name = "locations")
 @Getter
 @Setter
-public class LocationType {
+public class Location {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,4 +16,8 @@ public class LocationType {
 
     @Column(nullable = false, unique = true)
     private String name;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_type_id", nullable = false)
+    private LocationType locationType;
 }
