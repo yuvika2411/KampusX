@@ -20,8 +20,8 @@ public class IssueResponse {
     private Long categoryId;
     private String categoryName;
 
-    private LocationType locationType;
-    private String location;
+    private Long locationId;
+    private String locationName;
 
     private Long reporterId;
 }

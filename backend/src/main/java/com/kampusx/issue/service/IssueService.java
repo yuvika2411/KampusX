@@ -4,8 +4,12 @@ import com.kampusx.issue.dto.CreateIssueRequest;
 import com.kampusx.issue.dto.IssueResponse;
 import com.kampusx.issue.entity.Category;
 import com.kampusx.issue.entity.Issue;
+import com.kampusx.issue.entity.IssueStatus;
+import com.kampusx.issue.entity.Location;
 import com.kampusx.issue.repository.CategoryRepository;
 import com.kampusx.issue.repository.IssueRepository;
+import com.kampusx.issue.repository.LocationRepository;
+import com.kampusx.user.entity.Role;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +26,7 @@ public class IssueService {
     private final IssueRepository issueRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final LocationRepository locationRepository;
 
     public IssueResponse createIssue(CreateIssueRequest request) {
 
@@ -41,8 +46,10 @@ public class IssueService {
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
         issue.setCategory(category);
-        issue.setLocationType(request.getLocationType());
-        issue.setLocation(request.getLocation());
+        Location location = locationRepository.findById(request.getLocationId())
+                .orElseThrow(() -> new RuntimeException("Location not found"));
+
+        issue.setLocation(location);
         issue.setPriority(request.getPriority());
         issue.setAffectedUsers(request.getAffectedUsers());
         issue.setReporter(reporter);
@@ -61,8 +68,8 @@ public class IssueService {
         response.setDescription(issue.getDescription());
         response.setCategoryId(issue.getCategory().getId());
         response.setCategoryName(issue.getCategory().getName());
-        response.setLocationType(issue.getLocationType());
-        response.setLocation(issue.getLocation());
+        response.setLocationId(issue.getLocation().getId());
+        response.setLocationName(issue.getLocation().getName());
         response.setPriority(issue.getPriority());
         response.setStatus(issue.getStatus());
         response.setAffectedUsers(issue.getAffectedUsers());
@@ -73,6 +80,14 @@ public class IssueService {
 
     public List<IssueResponse> getAllIssues() {
         return issueRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<IssueResponse> getIssuesForCategoryHead(Long categoryHeadId) {
+
+        return issueRepository.findByCategoryCategoryHeadId(categoryHeadId)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -94,11 +109,14 @@ public class IssueService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
+
+        Location location = locationRepository.findById(request.getLocationId())
+                .orElseThrow(() -> new RuntimeException("Location not found"));
+
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
         issue.setCategory(category);
-        issue.setLocationType(request.getLocationType());
-        issue.setLocation(request.getLocation());
+        issue.setLocation(location);
         issue.setPriority(request.getPriority());
         issue.setAffectedUsers(request.getAffectedUsers());
 
@@ -107,7 +125,44 @@ public class IssueService {
         return toResponse(updatedIssue);
     }
 
-    public void deleteIssue(Long id) {
-        issueRepository.deleteById(id);
+    public IssueResponse assignResolver(
+            Long issueId,
+            Long resolverId,
+            Long categoryHeadId) {
+
+        Issue issue = issueRepository.findById(issueId)
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
+
+        User resolver = userRepository.findById(resolverId)
+                .orElseThrow(() -> new RuntimeException("Resolver not found"));
+
+        // Selected user must actually be a RESOLVER
+        if (resolver.getRole() != Role.RESOLVER) {
+            throw new RuntimeException("User is not a Resolver");
+        }
+
+        // Category Head can assign only issues from their own category
+        if (issue.getCategory().getCategoryHead() == null ||
+                !issue.getCategory().getCategoryHead().getId().equals(categoryHeadId)) {
+            throw new RuntimeException(
+                    "You cannot assign a resolver to this issue"
+            );
+        }
+
+        issue.setResolver(resolver);
+        issue.setStatus(IssueStatus.ASSIGNED);
+
+        Issue savedIssue = issueRepository.save(issue);
+
+        return toResponse(savedIssue);
     }
+
+    public void deleteIssue( Long issueId){
+        Issue issue = issueRepository.findById(issueId)
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
+
+        issueRepository.delete(issue);
+    }
+
+
 }

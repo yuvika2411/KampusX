@@ -1,6 +1,7 @@
 package com.kampusx.issue.entity;
 
 import com.kampusx.user.entity.User;
+import com.kampusx.issue.entity.Location;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,12 +39,9 @@ public class Issue {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private LocationType locationType;
-
-    @Column(nullable = false)
-    private String location;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_id", nullable = false)
+    private Location location;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resolver_id")

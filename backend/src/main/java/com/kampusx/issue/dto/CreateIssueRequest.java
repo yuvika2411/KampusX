@@ -1,7 +1,6 @@
 package com.kampusx.issue.dto;
 
 import com.kampusx.issue.entity.IssuePriority;
-import com.kampusx.issue.entity.LocationType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,9 +12,8 @@ public class CreateIssueRequest {
     private String description;
 
     private Long categoryId;
+    private Long locationId;
 
-    private LocationType locationType;
-    private String location;
     private IssuePriority priority;
     private Integer affectedUsers;
 }
