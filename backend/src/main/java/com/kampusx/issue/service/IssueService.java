@@ -59,6 +59,27 @@ public class IssueService {
         return toResponse(savedIssue);
     }
 
+    public IssueResponse updateIssue(Long id, CreateIssueRequest request) {
+
+        Issue issue = issueRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+
+        Location location = locationRepository.findById(request.getLocationId())
+                .orElseThrow(() -> new RuntimeException("Location not found"));
+
+        issue.setTitle(request.getTitle());
+        issue.setDescription(request.getDescription());
+        issue.setCategory(category);
+        issue.setLocation(location);
+
+        Issue updatedIssue = issueRepository.save(issue);
+
+        return toResponse(updatedIssue);
+    }
+
     private IssueResponse toResponse(Issue issue) {
 
         IssueResponse response = new IssueResponse();
@@ -106,26 +127,92 @@ public class IssueService {
         return toResponse(issue);
     }
 
-    public IssueResponse updateIssue(Long id, CreateIssueRequest request) {
+    public IssueResponse updateStatus(
+            Long issueId,
+            IssueStatus newStatus,
+            String email) {
 
-        Issue issue = issueRepository.findById(id)
+        Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new RuntimeException("Issue not found"));
 
-        Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Only the assigned resolver can update the issue
+        if (issue.getResolver() == null ||
+                !issue.getResolver().getId().equals(user.getId())) {
 
-        Location location = locationRepository.findById(request.getLocationId())
-                .orElseThrow(() -> new RuntimeException("Location not found"));
+            throw new RuntimeException(
+                    "You are not the assigned resolver for this issue"
+            );
+        }
 
-        issue.setTitle(request.getTitle());
-        issue.setDescription(request.getDescription());
-        issue.setCategory(category);
-        issue.setLocation(location);
+        // Resolver cannot close an issue
+        if (newStatus == IssueStatus.CLOSED) {
+            throw new RuntimeException(
+                    "Only the student who created the issue can close it"
+            );
+        }
 
-        Issue updatedIssue = issueRepository.save(issue);
+        issue.setStatus(newStatus);
 
-        return toResponse(updatedIssue);
+        Issue savedIssue = issueRepository.save(issue);
+
+        return toResponse(savedIssue);
+    }
+
+    public IssueResponse closeIssue(Long issueId, String studentEmail) {
+
+        Issue issue = issueRepository.findById(issueId)
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
+
+        User student = userRepository.findByEmail(studentEmail)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        // Only the student who created the issue can close it
+        if (!issue.getReporter().getId().equals(student.getId())) {
+            throw new RuntimeException("You are not the student who created this issue");
+        }
+
+        // Issue must be resolved before closing
+        if (issue.getStatus() != IssueStatus.RESOLVED) {
+            throw new RuntimeException("Only resolved issues can be closed");
+        }
+
+        issue.setStatus(IssueStatus.CLOSED);
+
+        Issue savedIssue = issueRepository.save(issue);
+
+        return toResponse(savedIssue);
+    }
+
+    public IssueResponse reopenIssue(Long issueId, String studentEmail) {
+
+        Issue issue = issueRepository.findById(issueId)
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
+
+        User student = userRepository.findByEmail(studentEmail)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        // Only the student who created the issue can reopen it
+        if (!issue.getReporter().getId().equals(student.getId())) {
+            throw new RuntimeException(
+                    "You are not the student who created this issue"
+            );
+        }
+
+        // Only CLOSED issues can be reopened
+        if (issue.getStatus() != IssueStatus.CLOSED) {
+            throw new RuntimeException(
+                    "Only closed issues can be reopened"
+            );
+        }
+
+        issue.setStatus(IssueStatus.REOPENED);
+
+        Issue savedIssue = issueRepository.save(issue);
+
+        return toResponse(savedIssue);
     }
 
     public IssueResponse assignResolver(
@@ -166,6 +253,7 @@ public class IssueService {
 
         issueRepository.delete(issue);
     }
+
 
 
 }
