@@ -2,6 +2,7 @@ package com.kampusx.issue.controller;
 
 import com.kampusx.issue.service.IssueVoteService;
 import com.kampusx.user.entity.User;
+import com.kampusx.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -13,13 +14,17 @@ import org.springframework.web.bind.annotation.*;
 public class IssueVoteController {
 
     private final IssueVoteService issueVoteService;
+    private final UserRepository userRepository;
 
     @PostMapping("/{issueId}/vote")
     public ResponseEntity<String> vote(
             @PathVariable Long issueId,
             Authentication authentication) {
 
-        User user = (User) authentication.getPrincipal();
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         issueVoteService.vote(issueId, user);
 

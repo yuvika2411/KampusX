@@ -1,7 +1,6 @@
 package com.kampusx.issue.entity;
 
 import com.kampusx.user.entity.User;
-import com.kampusx.issue.entity.Location;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,8 +27,6 @@ public class Issue {
 
     @Enumerated(EnumType.STRING)
     private IssuePriority priority;
-
-    private Integer affectedUsers;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reporter_id", nullable = false)
