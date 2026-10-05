@@ -12,6 +12,7 @@ import com.kampusx.issue.repository.LocationRepository;
 import com.kampusx.user.entity.Role;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
+import com.kampusx.issue.repository.IssueVoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +28,7 @@ public class IssueService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final LocationRepository locationRepository;
+    private final IssueVoteRepository issueVoteRepository;
 
     public IssueResponse createIssue(CreateIssueRequest request) {
 
@@ -50,8 +52,6 @@ public class IssueService {
                 .orElseThrow(() -> new RuntimeException("Location not found"));
 
         issue.setLocation(location);
-        issue.setPriority(request.getPriority());
-        issue.setAffectedUsers(request.getAffectedUsers());
         issue.setReporter(reporter);
 
         Issue savedIssue = issueRepository.save(issue);
@@ -72,7 +72,12 @@ public class IssueService {
         response.setLocationName(issue.getLocation().getName());
         response.setPriority(issue.getPriority());
         response.setStatus(issue.getStatus());
-        response.setAffectedUsers(issue.getAffectedUsers());
+        long affectedUsers =
+                issueVoteRepository.countByIssueId(issue.getId());
+
+        response.setAffectedUsers(
+                (int) issueVoteRepository.countByIssueId(issue.getId())
+        );
         response.setReporterId(issue.getReporter().getId());
 
         return response;
@@ -117,8 +122,6 @@ public class IssueService {
         issue.setDescription(request.getDescription());
         issue.setCategory(category);
         issue.setLocation(location);
-        issue.setPriority(request.getPriority());
-        issue.setAffectedUsers(request.getAffectedUsers());
 
         Issue updatedIssue = issueRepository.save(issue);
 

@@ -13,7 +13,4 @@ public class CreateIssueRequest {
 
     private Long categoryId;
     private Long locationId;
-
-    private IssuePriority priority;
-    private Integer affectedUsers;
 }
