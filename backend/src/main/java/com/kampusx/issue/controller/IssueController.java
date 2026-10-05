@@ -2,6 +2,7 @@ package com.kampusx.issue.controller;
 
 import com.kampusx.issue.dto.CreateIssueRequest;
 import com.kampusx.issue.dto.IssueResponse;
+import com.kampusx.issue.dto.UpdateStatusRequest;
 import com.kampusx.issue.service.IssueService;
 import com.kampusx.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -98,5 +99,49 @@ public class IssueController {
     @DeleteMapping("/{id}")
     public void deleteIssue(@PathVariable Long id) {
         issueService.deleteIssue(id);
+    }
+
+    @PreAuthorize("hasRole('RESOLVER')")
+    @PutMapping("/{id}/status")
+    public ResponseEntity<IssueResponse> updateStatus(
+            @PathVariable Long id,
+            @RequestBody UpdateStatusRequest request,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                issueService.updateStatus(
+                        id,
+                        request.getStatus(),
+                        authentication.getName()
+                )
+        );
+    }
+
+    @PreAuthorize("hasRole('STUDENT')")
+    @PutMapping("/{id}/close")
+    public ResponseEntity<IssueResponse> closeIssue(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                issueService.closeIssue(
+                        id,
+                        authentication.getName()
+                )
+        );
+    }
+
+    @PreAuthorize("hasRole('STUDENT')")
+    @PutMapping("/{id}/reopen")
+    public ResponseEntity<IssueResponse> reopenIssue(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                issueService.reopenIssue(
+                        id,
+                        authentication.getName()
+                )
+        );
     }
 }
