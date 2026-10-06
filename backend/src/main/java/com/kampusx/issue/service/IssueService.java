@@ -111,6 +111,17 @@ public class IssueService {
                 .toList();
     }
 
+    public List<IssueResponse> getMyIssues(String email) {
+
+        User student = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        return issueRepository.findByReporterId(student.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public List<IssueResponse> getIssuesForCategoryHead(Long categoryHeadId) {
 
         return issueRepository.findByCategoryCategoryHeadId(categoryHeadId)

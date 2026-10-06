@@ -38,6 +38,16 @@ public class IssueController {
         return ResponseEntity.ok(issueService.getAllIssues());
     }
 
+    @PreAuthorize("hasRole('STUDENT')")
+    @GetMapping("/my")
+    public ResponseEntity<List<IssueResponse>> getMyIssues(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                issueService.getMyIssues(authentication.getName())
+        );
+    }
+
     @GetMapping("/category-head")
     @PreAuthorize("hasRole('CATEGORY_HEAD')")
     public ResponseEntity<List<IssueResponse>> getIssuesForCategoryHead(
