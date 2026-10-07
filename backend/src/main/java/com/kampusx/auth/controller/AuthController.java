@@ -2,12 +2,15 @@ package com.kampusx.auth.controller;
 
 import com.kampusx.auth.dto.LoginRequest;
 import com.kampusx.auth.dto.LoginResponse;
+import com.kampusx.auth.service.EmailOtpService;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import com.kampusx.auth.service.JwtService;
+import com.kampusx.auth.dto.VerifyOtpRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -16,6 +19,8 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailOtpService emailOtpService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
@@ -23,7 +28,10 @@ public class AuthController {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword())) {
+
             throw new RuntimeException("Invalid email or password");
         }
 
@@ -38,5 +46,25 @@ public class AuthController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/send-otp")
+    public ResponseEntity<String> sendOtp(@RequestParam String email) {
+
+        emailOtpService.generateOtp(email);
+
+        return ResponseEntity.ok("If the email is eligible, an OTP has been sent.");
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<String> verifyOtp(
+            @RequestBody VerifyOtpRequest request) {
+
+        emailOtpService.verifyOtp(
+                request.getEmail(),
+                request.getOtp()
+        );
+
+        return ResponseEntity.ok("OTP verified successfully");
     }
 }

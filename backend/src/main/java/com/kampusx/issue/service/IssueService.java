@@ -100,6 +100,7 @@ public class IssueService {
                 (int) issueVoteRepository.countByIssueId(issue.getId())
         );
         response.setReporterId(issue.getReporter().getId());
+        response.setReporterName(issue.getReporter().getName());
 
         return response;
     }
@@ -158,10 +159,30 @@ public class IssueService {
             );
         }
 
-        // Resolver cannot close an issue
-        if (newStatus == IssueStatus.CLOSED) {
+        IssueStatus currentStatus = issue.getStatus();
+
+        if (currentStatus == IssueStatus.ASSIGNED
+                && newStatus != IssueStatus.IN_PROGRESS) {
+
             throw new RuntimeException(
-                    "Only the student who created the issue can close it"
+                    "Assigned issue can only move to IN_PROGRESS"
+            );
+        }
+
+        if (currentStatus == IssueStatus.IN_PROGRESS
+                && newStatus != IssueStatus.RESOLVED) {
+
+            throw new RuntimeException(
+                    "In-progress issue can only move to RESOLVED"
+            );
+        }
+
+        if (currentStatus == IssueStatus.RESOLVED
+                || currentStatus == IssueStatus.CLOSED
+                || currentStatus == IssueStatus.REOPENED) {
+
+            throw new RuntimeException(
+                    "Resolver cannot update the issue from its current status"
             );
         }
 
@@ -263,6 +284,17 @@ public class IssueService {
                 .orElseThrow(() -> new RuntimeException("Issue not found"));
 
         issueRepository.delete(issue);
+    }
+
+    public List<IssueResponse> getAssignedIssues(String email) {
+
+        User resolver = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Resolver not found"));
+
+        return issueRepository.findByResolverId(resolver.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
 

@@ -24,4 +24,8 @@ public class IssueResponse {
     private String locationName;
 
     private Long reporterId;
+    private String reporterName;
+    private long voteCount;
+    private long commentCount;
+    private boolean hasVoted;
 }
