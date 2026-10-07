@@ -154,4 +154,23 @@ public class IssueController {
                 )
         );
     }
+
+    @PreAuthorize("hasRole('RESOLVER')")
+    @GetMapping("/assigned")
+    public ResponseEntity<List<IssueResponse>> getAssignedIssues(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                issueService.getAssignedIssues(authentication.getName())
+        );
+    }
+
+    @PreAuthorize("hasRole('STUDENT')")
+    @GetMapping("/feed")
+    public ResponseEntity<List<IssueResponse>> getStudentFeed() {
+
+        return ResponseEntity.ok(
+                issueService.getAllIssues()
+        );
+    }
 }

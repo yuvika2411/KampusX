@@ -9,4 +9,5 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
 
     List<Issue> findByCategoryCategoryHeadId(Long categoryHeadId);
     List<Issue> findByReporterId(Long reporterId);
+    List<Issue> findByResolverId(Long resolverId);
 }
