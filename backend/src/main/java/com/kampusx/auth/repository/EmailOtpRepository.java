@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface EmailOtpRepository extends JpaRepository<EmailOtp, Long> {
 
     Optional<EmailOtp> findTopByEmailOrderByIdDesc(String email);
+    Optional<EmailOtp> findTopByEmailAndUsedTrueOrderByIdDesc(String email);
 }
