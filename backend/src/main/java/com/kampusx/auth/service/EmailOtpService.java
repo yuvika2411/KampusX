@@ -17,6 +17,10 @@ public class EmailOtpService {
 
     public String generateOtp(String email) {
 
+        if (email == null || !email.toLowerCase().endsWith("@kiet.edu")) {
+            throw new RuntimeException("Only KIET email addresses are allowed");
+        }
+
         String otp = String.format("%06d", new Random().nextInt(1_000_000));
 
         EmailOtp emailOtp = new EmailOtp();
