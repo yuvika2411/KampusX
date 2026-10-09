@@ -38,10 +38,11 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/auth/login",
-                                "/api/auth/verify-otp",
+                                "/api/auth/login/request-otp",
+                                "/api/auth/login/verify-otp",
                                 "/api/auth/register/request-otp",
                                 "/api/auth/register/complete",
+                                "/api/auth/register/verify-otp",
                                 "/error"
                         ).permitAll()
 

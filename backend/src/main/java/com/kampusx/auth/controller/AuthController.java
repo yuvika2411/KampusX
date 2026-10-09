@@ -1,8 +1,8 @@
 package com.kampusx.auth.controller;
 
-import com.kampusx.auth.dto.CompleteRegistrationRequest;
-import com.kampusx.auth.dto.LoginRequest;
-import com.kampusx.auth.dto.LoginResponse;
+import com.kampusx.auth.dto.*;
+import com.kampusx.auth.entity.OtpPurpose;
+import com.kampusx.auth.service.AuthService;
 import com.kampusx.auth.service.EmailOtpService;
 import com.kampusx.auth.service.RegistrationService;
 import com.kampusx.user.entity.User;
@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import com.kampusx.auth.service.JwtService;
-import com.kampusx.auth.dto.VerifyOtpRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -24,45 +23,9 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final EmailOtpService emailOtpService;
     private final RegistrationService registrationService;
+    private final AuthService authService;
 
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
-
-        if (!passwordEncoder.matches(
-                request.getPassword(),
-                user.getPassword())) {
-
-            throw new RuntimeException("Invalid email or password");
-        }
-
-        String token = jwtService.generateToken(user.getEmail());
-
-        LoginResponse response = new LoginResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getRole().name(),
-                token
-        );
-
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/verify-otp")
-    public ResponseEntity<String> verifyOtp(
-            @RequestBody VerifyOtpRequest request) {
-
-        emailOtpService.verifyOtp(
-                request.getEmail(),
-                request.getOtp()
-        );
-
-        return ResponseEntity.ok("OTP verified successfully");
-    }
 
     @PostMapping("/register/request-otp")
     public ResponseEntity<String> requestRegistrationOtp(
@@ -80,5 +43,36 @@ public class AuthController {
         registrationService.completeRegistration(request);
 
         return ResponseEntity.ok("Registration completed successfully");
+    }
+
+    @PostMapping("/login/request-otp")
+    public ResponseEntity<String> requestLoginOtp(
+            @RequestBody LoginOtpRequest request) {
+
+        authService.requestLoginOtp(request);
+
+        return ResponseEntity.ok("Login OTP sent successfully");
+    }
+
+    @PostMapping("/login/verify-otp")
+    public ResponseEntity<LoginResponse> verifyLoginOtp(
+            @RequestBody VerifyOtpRequest request) {
+
+        return ResponseEntity.ok(
+                authService.verifyLoginOtp(request)
+        );
+    }
+
+    @PostMapping("/register/verify-otp")
+    public ResponseEntity<String> verifyRegistrationOtp(
+            @RequestBody VerifyOtpRequest request) {
+
+        emailOtpService.verifyOtp(
+                request.getEmail(),
+                request.getOtp(),
+                OtpPurpose.REGISTRATION
+        );
+
+        return ResponseEntity.ok("Registration OTP verified successfully");
     }
 }

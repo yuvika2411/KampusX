@@ -2,6 +2,7 @@ package com.kampusx.auth.service;
 
 import com.kampusx.auth.dto.CompleteRegistrationRequest;
 import com.kampusx.auth.entity.EmailOtp;
+import com.kampusx.auth.entity.OtpPurpose;
 import com.kampusx.auth.repository.EmailOtpRepository;
 import com.kampusx.user.entity.Role;
 import com.kampusx.user.entity.User;
@@ -31,7 +32,7 @@ public class RegistrationService {
             throw new RuntimeException("Email is already registered");
         }
 
-        emailOtpService.generateOtp(email);
+        emailOtpService.generateOtp(email, OtpPurpose.REGISTRATION);
     }
 
     public void completeRegistration(CompleteRegistrationRequest request) {
@@ -55,9 +56,15 @@ public class RegistrationService {
         }
 
         EmailOtp verifiedOtp = emailOtpRepository
-                .findTopByEmailAndUsedTrueOrderByIdDesc(email)
-                .orElseThrow(() ->
-                        new RuntimeException("Email is not verified"));
+                .findTopByEmailAndPurposeOrderByIdDesc(
+                        email,
+                        OtpPurpose.REGISTRATION
+                )
+                .orElseThrow(() -> new RuntimeException("Email is not verified"));
+
+        if (!verifiedOtp.isUsed()) {
+            throw new RuntimeException("Email is not verified");
+        }
 
         if (verifiedOtp.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("OTP verification has expired");
