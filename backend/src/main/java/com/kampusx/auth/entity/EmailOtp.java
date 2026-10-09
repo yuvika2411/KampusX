@@ -27,4 +27,14 @@ public class EmailOtp {
 
     @Column(nullable = false)
     private boolean used = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OtpPurpose purpose;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private int attempts = 0;
 }
