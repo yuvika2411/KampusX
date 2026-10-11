@@ -43,6 +43,12 @@ public class SecurityConfig {
                                 "/api/auth/register/request-otp",
                                 "/api/auth/register/complete",
                                 "/api/auth/register/verify-otp",
+                                "/api/auth/password/request-otp",
+                                "/api/auth/password/reset",
+                                "/api/users/me/name",
+                                "/api/users/me/password",
+                                "/api/admin/users",
+                                "/api/issues/search",
                                 "/error"
                         ).permitAll()
 
