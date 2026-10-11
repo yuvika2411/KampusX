@@ -9,11 +9,14 @@ import com.kampusx.issue.entity.Location;
 import com.kampusx.issue.repository.CategoryRepository;
 import com.kampusx.issue.repository.IssueRepository;
 import com.kampusx.issue.repository.LocationRepository;
+import com.kampusx.issue.specification.IssueSpecification;
 import com.kampusx.user.entity.Role;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
 import com.kampusx.issue.repository.IssueVoteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -297,6 +300,15 @@ public class IssueService {
                 .toList();
     }
 
-
+    public Page<IssueResponse> searchIssues(
+            String status,
+            String search,
+            Pageable pageable
+    ) {
+        return issueRepository.findAll(
+                IssueSpecification.filter(status, search),
+                pageable
+        ).map(this::toResponse);
+    }
 
 }

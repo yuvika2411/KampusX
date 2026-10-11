@@ -6,6 +6,10 @@ import com.kampusx.issue.dto.UpdateStatusRequest;
 import com.kampusx.issue.service.IssueService;
 import com.kampusx.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -172,5 +176,28 @@ public class IssueController {
         return ResponseEntity.ok(
                 issueService.getAllIssues()
         );
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/search")
+    public Page<IssueResponse> searchIssues(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException(
+                    "Invalid pagination parameters"
+            );
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("id").descending()
+        );
+
+        return issueService.searchIssues(status, search, pageable);
     }
 }
