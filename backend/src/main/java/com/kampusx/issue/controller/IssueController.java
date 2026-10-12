@@ -183,8 +183,11 @@ public class IssueController {
     public Page<IssueResponse> searchIssues(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long locationId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "newest") String sort
     ) {
         if (page < 0 || size < 1 || size > 100) {
             throw new IllegalArgumentException(
@@ -192,12 +195,34 @@ public class IssueController {
             );
         }
 
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by("id").descending()
-        );
+        Sort sorting;
 
-        return issueService.searchIssues(status, search, pageable);
+        switch (sort.toLowerCase(java.util.Locale.ROOT)) {
+            case "newest":
+                sorting = Sort.by("id").descending();
+                break;
+
+            case "oldest":
+                sorting = Sort.by("id").ascending();
+                break;
+
+            case "priority":
+                sorting = Sort.unsorted();
+                break;
+
+            default:
+                throw new IllegalArgumentException("Invalid sort option");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sorting);
+
+        return issueService.searchIssues(
+                status,
+                search,
+                categoryId,
+                locationId,
+                sort,
+                pageable
+        );
     }
 }
