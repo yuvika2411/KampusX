@@ -53,7 +53,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 System.out.println("USER FOUND: " + (user != null));
 
-                if (user != null && jwtService.isTokenValid(token, user.getEmail())) {
+                if (user != null
+                        && user.isActive()
+                        && jwtService.isTokenValid(token, user.getEmail())) {
 
                     SimpleGrantedAuthority authority =
                             new SimpleGrantedAuthority(

@@ -17,11 +17,14 @@ import com.kampusx.issue.repository.IssueVoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import com.kampusx.notification.service.AppNotificationService;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class IssueService {
     private final CategoryRepository categoryRepository;
     private final LocationRepository locationRepository;
     private final IssueVoteRepository issueVoteRepository;
+    private final AppNotificationService notificationService;
 
     public IssueResponse createIssue(CreateIssueRequest request) {
 
@@ -142,6 +146,7 @@ public class IssueService {
         return toResponse(issue);
     }
 
+    @Transactional
     public IssueResponse updateStatus(
             Long issueId,
             IssueStatus newStatus,
@@ -193,9 +198,17 @@ public class IssueService {
 
         Issue savedIssue = issueRepository.save(issue);
 
+        notificationService.notifyUser(
+                savedIssue.getReporter(),
+                savedIssue.getId(),
+                "Your issue #" + savedIssue.getId()
+                        + " status changed to " + newStatus + "."
+        );
+
         return toResponse(savedIssue);
     }
 
+    @Transactional
     public IssueResponse closeIssue(Long issueId, String studentEmail) {
 
         Issue issue = issueRepository.findById(issueId)
@@ -217,10 +230,17 @@ public class IssueService {
         issue.setStatus(IssueStatus.CLOSED);
 
         Issue savedIssue = issueRepository.save(issue);
+        notificationService.notifyUser(
+                savedIssue.getResolver(),
+                savedIssue.getId(),
+                "Issue #" + savedIssue.getId()
+                        + " has been closed by the student."
+        );
 
         return toResponse(savedIssue);
     }
 
+    @Transactional
     public IssueResponse reopenIssue(Long issueId, String studentEmail) {
 
         Issue issue = issueRepository.findById(issueId)
@@ -246,10 +266,17 @@ public class IssueService {
         issue.setStatus(IssueStatus.REOPENED);
 
         Issue savedIssue = issueRepository.save(issue);
+        notificationService.notifyUser(
+                savedIssue.getResolver(),
+                savedIssue.getId(),
+                "Issue #" + savedIssue.getId()
+                        + " has been reopened by the student."
+        );
 
         return toResponse(savedIssue);
     }
 
+    @Transactional
     public IssueResponse assignResolver(
             Long issueId,
             Long resolverId,
@@ -279,6 +306,20 @@ public class IssueService {
 
         Issue savedIssue = issueRepository.save(issue);
 
+        notificationService.notifyUser(
+                resolver,
+                savedIssue.getId(),
+                "Issue #" + savedIssue.getId()
+                        + " has been assigned to you."
+        );
+
+        notificationService.notifyUser(
+                savedIssue.getReporter(),
+                savedIssue.getId(),
+                "A resolver has been assigned to your issue #"
+                        + savedIssue.getId() + "."
+        );
+
         return toResponse(savedIssue);
     }
 
@@ -300,13 +341,23 @@ public class IssueService {
                 .toList();
     }
 
+
     public Page<IssueResponse> searchIssues(
             String status,
             String search,
+            Long categoryId,
+            Long locationId,
+            String sort,
             Pageable pageable
     ) {
         return issueRepository.findAll(
-                IssueSpecification.filter(status, search),
+                IssueSpecification.filter(
+                        status,
+                        search,
+                        categoryId,
+                        locationId,
+                        sort
+                ),
                 pageable
         ).map(this::toResponse);
     }

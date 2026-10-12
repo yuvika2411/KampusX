@@ -49,6 +49,8 @@ public class SecurityConfig {
                                 "/api/users/me/password",
                                 "/api/admin/users",
                                 "/api/issues/search",
+                                "/api/admin/analytics",
+                                "/api/issues/",
                                 "/error"
                         ).permitAll()
 
