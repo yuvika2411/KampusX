@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
+import com.kampusx.common.BadRequestException;
 
 @Service
 @RequiredArgsConstructor
@@ -27,11 +28,9 @@ public class PasswordResetService {
             return;
         }
 
-        String otp = emailOtpService.generateOtp(
+        emailOtpService.generateOtp(
                 email, OtpPurpose.PASSWORD_RESET
         );
-
-        emailService.sendOtpEmail(email, otp);
     }
 
     @Transactional
@@ -44,18 +43,18 @@ public class PasswordResetService {
         email = normalize(email);
 
         if (newPassword == null || newPassword.length() < 8) {
-            throw new RuntimeException(
+            throw new BadRequestException(
                     "Password must contain at least 8 characters"
             );
         }
 
         if (!newPassword.equals(confirmPassword)) {
-            throw new RuntimeException("Passwords do not match");
+            throw new BadRequestException("Passwords do not match");
         }
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Invalid reset request")
+                        new BadRequestException("Invalid reset request")
                 );
 
         // Validates expiry, attempts, purpose and marks OTP used.
@@ -69,7 +68,7 @@ public class PasswordResetService {
 
     private String normalize(String email) {
         if (email == null || email.isBlank()) {
-            throw new RuntimeException("Email is required");
+            throw new BadRequestException("Email is required");
         }
         return email.trim().toLowerCase(Locale.ROOT);
     }

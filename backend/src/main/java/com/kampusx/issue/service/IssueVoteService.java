@@ -1,5 +1,7 @@
 package com.kampusx.issue.service;
 
+import com.kampusx.common.BadRequestException;
+import com.kampusx.common.ResourceNotFoundException;
 import com.kampusx.issue.entity.Issue;
 import com.kampusx.issue.entity.IssuePriority;
 import com.kampusx.issue.entity.IssueVote;
@@ -8,6 +10,7 @@ import com.kampusx.issue.repository.IssueVoteRepository;
 import com.kampusx.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -16,13 +19,14 @@ public class IssueVoteService {
     private final IssueVoteRepository issueVoteRepository;
     private final IssueRepository issueRepository;
 
+    @Transactional
     public void vote(Long issueId, User user) {
 
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         if (issueVoteRepository.existsByIssueIdAndUserId(issueId, user.getId())) {
-            throw new RuntimeException("You have already voted for this issue");
+            throw new BadRequestException("You have already voted for this issue");
         }
 
         IssueVote vote = new IssueVote();
@@ -45,7 +49,7 @@ public class IssueVoteService {
 
         // Verify issue exists
         if (!issueRepository.existsById(issueId)) {
-            throw new RuntimeException("Issue not found");
+            throw new ResourceNotFoundException("Issue not found");
         }
 
         return issueVoteRepository.countByIssueId(issueId);

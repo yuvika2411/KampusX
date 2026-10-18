@@ -43,15 +43,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String email = jwtService.extractEmail(token);
 
-            System.out.println("JWT EMAIL: " + email);
-
             if (email != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 User user = userRepository.findByEmail(email)
                         .orElse(null);
-
-                System.out.println("USER FOUND: " + (user != null));
 
                 if (user != null
                         && user.isActive()
@@ -62,9 +58,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     "ROLE_" + user.getRole().name()
                             );
 
-                    System.out.println("USER ROLE: " + user.getRole());
-                    System.out.println("AUTHORITY: " + authority.getAuthority());
-
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     user.getEmail(),
@@ -74,16 +67,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     SecurityContextHolder.getContext()
                             .setAuthentication(authentication);
-
-                    System.out.println("AUTHENTICATION SET: "
-                            + SecurityContextHolder.getContext()
-                            .getAuthentication().isAuthenticated());
                 }
             }
 
-        } catch (Exception e) {
-            System.out.println("JWT ERROR: " + e.getMessage());
-            e.printStackTrace();
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException ex) {
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);

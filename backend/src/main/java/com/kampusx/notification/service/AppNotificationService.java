@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.kampusx.common.ResourceNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -66,7 +67,7 @@ public class AppNotificationService {
         AppNotification notification = notificationRepository
                 .findByIdAndUserId(notificationId, user.getId())
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
+                        new ResourceNotFoundException(
                                 "Notification not found"
                         )
                 );
@@ -79,7 +80,7 @@ public class AppNotificationService {
     private User getUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("User not found")
+                        new ResourceNotFoundException("User not found")
                 );
     }
 

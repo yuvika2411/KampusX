@@ -37,4 +37,7 @@ public class EmailOtp {
 
     @Column(nullable = false)
     private int attempts = 0;
+
+    @Column(nullable = false)
+    private boolean registrationCompleted = false;
 }

@@ -10,6 +10,9 @@ import com.kampusx.user.entity.Role;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ResponseStatusException;
+import com.kampusx.common.BadRequestException;
+import com.kampusx.common.ResourceNotFoundException;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Map;
@@ -57,23 +60,23 @@ public class AdminUserController {
     ) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found")
+                        new ResourceNotFoundException("User not found")
                 );
 
         if (request.role() == null) {
-            throw new RuntimeException("Role is required");
+            throw new BadRequestException("Role is required");
         }
 
         String role = request.role().trim().toUpperCase();
 
         if (!List.of("STUDENT", "RESOLVER", "CATEGORY_HEAD")
                 .contains(role)) {
-            throw new RuntimeException("Invalid role");
+            throw new BadRequestException("Invalid role");
         }
 
         // Prevent admin role changes through this endpoint.
         if ("ADMIN".equals(user.getRole().name())) {
-            throw new RuntimeException(
+            throw new AccessDeniedException(
                     "Cannot change an admin's role"
             );
         }

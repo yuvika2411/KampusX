@@ -1,5 +1,7 @@
 package com.kampusx.issue.controller;
 
+import com.kampusx.common.ResourceNotFoundException;
+
 import com.kampusx.issue.service.IssueVoteService;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
@@ -7,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/issues")
@@ -16,6 +19,7 @@ public class IssueVoteController {
     private final IssueVoteService issueVoteService;
     private final UserRepository userRepository;
 
+    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/{issueId}/vote")
     public ResponseEntity<String> vote(
             @PathVariable Long issueId,
@@ -24,7 +28,7 @@ public class IssueVoteController {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         issueVoteService.vote(issueId, user);
 

@@ -1,11 +1,14 @@
 package com.kampusx.user.service;
 
+import com.kampusx.common.ResourceNotFoundException;
+
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.kampusx.common.BadRequestException;
 
 @Service
 @RequiredArgsConstructor
@@ -20,12 +23,12 @@ public class UserProfileService {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                        new ResourceNotFoundException("User not found"));
     }
 
     public void updateName(String name) {
         if (name == null || name.isBlank()) {
-            throw new RuntimeException("Name cannot be empty");
+            throw new BadRequestException("Name cannot be empty");
         }
 
         User user = currentUser();
@@ -41,11 +44,11 @@ public class UserProfileService {
 
         if (!passwordEncoder.matches(
                 currentPassword, user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new BadRequestException("Current password is incorrect");
         }
 
         if (newPassword == null || newPassword.length() < 8) {
-            throw new RuntimeException(
+            throw new BadRequestException(
                     "New password must be at least 8 characters");
         }
 

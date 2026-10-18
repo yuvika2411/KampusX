@@ -1,10 +1,13 @@
 package com.kampusx.issue.controller;
 
+import com.kampusx.common.ResourceNotFoundException;
+
 import com.kampusx.issue.dto.CreateIssueRequest;
 import com.kampusx.issue.dto.IssueResponse;
 import com.kampusx.issue.dto.UpdateStatusRequest;
 import com.kampusx.issue.service.IssueService;
 import com.kampusx.user.entity.User;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,7 +32,7 @@ public class IssueController {
     @PreAuthorize("hasRole('STUDENT')")
     @PostMapping
     public ResponseEntity<IssueResponse> createIssue(
-            @RequestBody CreateIssueRequest request) {
+            @Valid @RequestBody CreateIssueRequest request) {
 
         return ResponseEntity.ok(
                 issueService.createIssue(request)
@@ -60,7 +63,7 @@ public class IssueController {
         String email = authentication.getName();
 
         User categoryHead = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return ResponseEntity.ok(
                 issueService.getIssuesForCategoryHead(categoryHead.getId())
@@ -77,7 +80,7 @@ public class IssueController {
         );
     }
 
-    @PreAuthorize("hasAnyRole('CATEGORY_HEAD', 'RESOLVER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<IssueResponse> updateIssue(
             @PathVariable Long id,
@@ -98,7 +101,7 @@ public class IssueController {
         String email = authentication.getName();
 
         User categoryHead = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Category Head not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category Head not found"));
 
         return ResponseEntity.ok(
                 issueService.assignResolver(

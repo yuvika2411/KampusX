@@ -25,6 +25,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import com.kampusx.notification.service.AppNotificationService;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
+import com.kampusx.common.ResourceNotFoundException;
+import com.kampusx.common.BadRequestException;
 
 @Service
 @RequiredArgsConstructor
@@ -45,10 +48,10 @@ public class IssueService {
         String email = authentication.getName();
 
         User reporter = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Reporter not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reporter not found"));
 
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
         Issue issue = new Issue();
 
@@ -56,7 +59,7 @@ public class IssueService {
         issue.setDescription(request.getDescription());
         issue.setCategory(category);
         Location location = locationRepository.findById(request.getLocationId())
-                .orElseThrow(() -> new RuntimeException("Location not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Location not found"));
 
         issue.setLocation(location);
         issue.setReporter(reporter);
@@ -69,13 +72,13 @@ public class IssueService {
     public IssueResponse updateIssue(Long id, CreateIssueRequest request) {
 
         Issue issue = issueRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
         Location location = locationRepository.findById(request.getLocationId())
-                .orElseThrow(() -> new RuntimeException("Location not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Location not found"));
 
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
@@ -112,6 +115,7 @@ public class IssueService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public List<IssueResponse> getAllIssues() {
         return issueRepository.findAll()
                 .stream()
@@ -122,7 +126,7 @@ public class IssueService {
     public List<IssueResponse> getMyIssues(String email) {
 
         User student = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
         return issueRepository.findByReporterId(student.getId())
                 .stream()
@@ -141,7 +145,9 @@ public class IssueService {
     public IssueResponse getIssueById(Long id) {
 
         Issue issue = issueRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Issue not found")
+                );
 
         return toResponse(issue);
     }
@@ -153,26 +159,37 @@ public class IssueService {
             String email) {
 
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Only the assigned resolver can update the issue
         if (issue.getResolver() == null ||
                 !issue.getResolver().getId().equals(user.getId())) {
 
-            throw new RuntimeException(
+            throw new AccessDeniedException(
                     "You are not the assigned resolver for this issue"
             );
         }
 
         IssueStatus currentStatus = issue.getStatus();
 
+        if (newStatus == null) {
+            throw new ResourceNotFoundException("Status is required");
+        }
+
+        if (currentStatus != IssueStatus.ASSIGNED
+                && currentStatus != IssueStatus.IN_PROGRESS) {
+            throw new ResourceNotFoundException(
+                    "Issue cannot be updated from its current status"
+            );
+        }
+
         if (currentStatus == IssueStatus.ASSIGNED
                 && newStatus != IssueStatus.IN_PROGRESS) {
 
-            throw new RuntimeException(
+            throw new BadRequestException(
                     "Assigned issue can only move to IN_PROGRESS"
             );
         }
@@ -180,7 +197,7 @@ public class IssueService {
         if (currentStatus == IssueStatus.IN_PROGRESS
                 && newStatus != IssueStatus.RESOLVED) {
 
-            throw new RuntimeException(
+            throw new BadRequestException(
                     "In-progress issue can only move to RESOLVED"
             );
         }
@@ -189,7 +206,7 @@ public class IssueService {
                 || currentStatus == IssueStatus.CLOSED
                 || currentStatus == IssueStatus.REOPENED) {
 
-            throw new RuntimeException(
+            throw new BadRequestException(
                     "Resolver cannot update the issue from its current status"
             );
         }
@@ -212,19 +229,20 @@ public class IssueService {
     public IssueResponse closeIssue(Long issueId, String studentEmail) {
 
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         User student = userRepository.findByEmail(studentEmail)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
         // Only the student who created the issue can close it
         if (!issue.getReporter().getId().equals(student.getId())) {
-            throw new RuntimeException("You are not the student who created this issue");
-        }
+            throw new AccessDeniedException(
+                    "You are not the student who created this issue"
+            );        }
 
         // Issue must be resolved before closing
         if (issue.getStatus() != IssueStatus.RESOLVED) {
-            throw new RuntimeException("Only resolved issues can be closed");
+            throw new BadRequestException("Only resolved issues can be closed");
         }
 
         issue.setStatus(IssueStatus.CLOSED);
@@ -244,21 +262,21 @@ public class IssueService {
     public IssueResponse reopenIssue(Long issueId, String studentEmail) {
 
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         User student = userRepository.findByEmail(studentEmail)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
         // Only the student who created the issue can reopen it
         if (!issue.getReporter().getId().equals(student.getId())) {
-            throw new RuntimeException(
+            throw new AccessDeniedException(
                     "You are not the student who created this issue"
             );
         }
 
         // Only CLOSED issues can be reopened
         if (issue.getStatus() != IssueStatus.CLOSED) {
-            throw new RuntimeException(
+            throw new BadRequestException(
                     "Only closed issues can be reopened"
             );
         }
@@ -283,21 +301,34 @@ public class IssueService {
             Long categoryHeadId) {
 
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         User resolver = userRepository.findById(resolverId)
-                .orElseThrow(() -> new RuntimeException("Resolver not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Resolver not found"));
 
         // Selected user must actually be a RESOLVER
         if (resolver.getRole() != Role.RESOLVER) {
-            throw new RuntimeException("User is not a Resolver");
+            throw new BadRequestException("User is not a Resolver");
         }
 
         // Category Head can assign only issues from their own category
         if (issue.getCategory().getCategoryHead() == null ||
                 !issue.getCategory().getCategoryHead().getId().equals(categoryHeadId)) {
-            throw new RuntimeException(
+            throw new AccessDeniedException(
                     "You cannot assign a resolver to this issue"
+            );
+        }
+
+        if (issue.getStatus() == IssueStatus.RESOLVED
+                || issue.getStatus() == IssueStatus.CLOSED) {
+            throw new BadRequestException(
+                    "Resolved or closed issues cannot be reassigned"
+            );
+        }
+
+        if (!resolver.isActive()) {
+            throw new BadRequestException(
+                    "Inactive resolver cannot be assigned"
             );
         }
 
@@ -325,7 +356,7 @@ public class IssueService {
 
     public void deleteIssue( Long issueId){
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         issueRepository.delete(issue);
     }
@@ -333,7 +364,7 @@ public class IssueService {
     public List<IssueResponse> getAssignedIssues(String email) {
 
         User resolver = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Resolver not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Resolver not found"));
 
         return issueRepository.findByResolverId(resolver.getId())
                 .stream()
