@@ -1,5 +1,7 @@
 package com.kampusx.user.controller;
 
+import com.kampusx.common.ResourceNotFoundException;
+
 import com.kampusx.user.dto.UserResponse;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
@@ -20,7 +22,7 @@ public class UserController {
             Authentication authentication) {
 
         User user = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         UserResponse response = new UserResponse();
 

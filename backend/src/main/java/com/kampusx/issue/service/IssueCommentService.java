@@ -1,5 +1,6 @@
 package com.kampusx.issue.service;
 
+import com.kampusx.common.ResourceNotFoundException;
 import com.kampusx.issue.dto.CreateCommentRequest;
 import com.kampusx.issue.dto.IssueCommentResponse;
 import com.kampusx.issue.entity.Issue;
@@ -27,10 +28,10 @@ public class IssueCommentService {
             CreateCommentRequest request) {
 
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         IssueComment comment = new IssueComment();
         comment.setComment(request.getComment());
@@ -46,7 +47,7 @@ public class IssueCommentService {
     public List<IssueCommentResponse> getComments(Long issueId) {
 
         if (!issueRepository.existsById(issueId)) {
-            throw new RuntimeException("Issue not found");
+            throw new ResourceNotFoundException("Issue not found");
         }
 
         return issueCommentRepository

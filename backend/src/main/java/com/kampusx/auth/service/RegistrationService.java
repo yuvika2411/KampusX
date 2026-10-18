@@ -7,11 +7,15 @@ import com.kampusx.auth.repository.EmailOtpRepository;
 import com.kampusx.user.entity.Role;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import com.kampusx.common.BadRequestException;
 
 @Service
 @RequiredArgsConstructor
@@ -24,35 +28,63 @@ public class RegistrationService {
 
     public void requestRegistrationOtp(String email) {
 
-        if (email == null || !email.toLowerCase().endsWith("@kiet.edu")) {
-            throw new RuntimeException("Only KIET email addresses are allowed");
+        if (email == null || email.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Email is required"
+            );
+        }
+
+        email = email.trim().toLowerCase(java.util.Locale.ROOT);
+
+        if (!email.endsWith("@kiet.edu")) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only KIET email addresses are allowed"
+            );
         }
 
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email is already registered");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Email is already registered"
+            );
         }
 
         emailOtpService.generateOtp(email, OtpPurpose.REGISTRATION);
     }
 
+
+
+    @Transactional
     public void completeRegistration(CompleteRegistrationRequest request) {
 
-        String email = request.getEmail().toLowerCase();
+        if (request == null || request.getEmail() == null
+                || request.getEmail().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Email is required"
+            );
+        }
+
+        String email = request.getEmail()
+                .trim()
+                .toLowerCase(java.util.Locale.ROOT);
 
         if (!email.endsWith("@kiet.edu")) {
-            throw new RuntimeException("Only KIET email addresses are allowed");
+            throw new BadRequestException("Only KIET email addresses are allowed");
         }
 
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email is already registered");
+            throw new BadRequestException("Email is already registered");
         }
 
         if (request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new RuntimeException("Password is required");
+            throw new BadRequestException("Password is required");
         }
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
-            throw new RuntimeException("Passwords do not match");
+            throw new BadRequestException("Passwords do not match");
         }
 
         EmailOtp verifiedOtp = emailOtpRepository
@@ -60,14 +92,20 @@ public class RegistrationService {
                         email,
                         OtpPurpose.REGISTRATION
                 )
-                .orElseThrow(() -> new RuntimeException("Email is not verified"));
+                .orElseThrow(() -> new BadRequestException("Email is not verified"));
 
         if (!verifiedOtp.isUsed()) {
-            throw new RuntimeException("Email is not verified");
+            throw new BadRequestException("Email is not verified");
         }
 
         if (verifiedOtp.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("OTP verification has expired");
+            throw new BadRequestException("OTP verification has expired");
+        }
+
+        if (verifiedOtp.isRegistrationCompleted()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Registration OTP has already been consumed");
         }
 
         User user = new User();
@@ -78,5 +116,7 @@ public class RegistrationService {
         user.setRole(Role.STUDENT);
 
         userRepository.save(user);
+        verifiedOtp.setRegistrationCompleted(true);
+        emailOtpRepository.save(verifiedOtp);
     }
 }

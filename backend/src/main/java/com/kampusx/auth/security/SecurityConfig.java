@@ -3,6 +3,7 @@ package com.kampusx.auth.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -37,6 +38,7 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+
                         .requestMatchers(
                                 "/api/auth/login/request-otp",
                                 "/api/auth/login/verify-otp",
@@ -45,16 +47,36 @@ public class SecurityConfig {
                                 "/api/auth/register/verify-otp",
                                 "/api/auth/password/request-otp",
                                 "/api/auth/password/reset",
-                                "/api/users/me/name",
-                                "/api/users/me/password",
-                                "/api/admin/users",
-                                "/api/issues/search",
-                                "/api/admin/analytics",
-                                "/api/issues/",
-                                "/error"
+                                "/error",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
                         ).permitAll()
 
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers("/api/users/me/**")
+                        .authenticated()
+
                         .anyRequest().authenticated()
+                )
+
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, exception) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType("application/json");
+                            response.getWriter().write(
+                                    "{\"error\":\"Authentication required\"}"
+                            );
+                        })
+                        .accessDeniedHandler((request, response, exception) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.setContentType("application/json");
+                            response.getWriter().write(
+                                    "{\"error\":\"Access denied\"}"
+                            );
+                        })
                 )
 
                 .addFilterBefore(

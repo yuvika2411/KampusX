@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import com.kampusx.common.BadRequestException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -27,7 +28,7 @@ public class NotificationController {
             @RequestParam(defaultValue = "10") int size
     ) {
         if (page < 0 || size < 1 || size > 100) {
-            throw new IllegalArgumentException(
+            throw new BadRequestException(
                     "Invalid pagination parameters"
             );
         }
