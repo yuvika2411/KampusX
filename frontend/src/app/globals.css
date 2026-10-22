@@ -1,26 +1,165 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+:root,
+:root[data-theme="light"] {
+  --page: #f8f9ff;
+  --card: #ffffff;
+  --ink: #0f1330;
+  --mute: #5b6182;
+  --line: #e4e7f8;
+  --soft: #eef0ff;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0b0d1f;
+    --card: #14172e;
+    --ink: #eef0ff;
+    --mute: #9aa0c4;
+    --line: #252a4d;
+    --soft: #1b1f40;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --page: #0b0d1f;
+  --card: #14172e;
+  --ink: #eef0ff;
+  --mute: #9aa0c4;
+  --line: #252a4d;
+  --soft: #1b1f40;
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-page: var(--page);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-mute: var(--mute);
+  --color-line: var(--line);
+  --color-soft: var(--soft);
+  --color-background: var(--page);
+  --color-foreground: var(--ink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--page);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  overflow-x: hidden;
 }
+
+/* Selection */
+::selection {
+  background-color: #4f46e5;
+  color: #ffffff;
+}
+
+/* Brand gradient utilities */
+.bg-brand-gradient {
+  background-image: linear-gradient(135deg, #4f46e5, #2563eb);
+}
+
+.text-brand-gradient {
+  background-image: linear-gradient(120deg, #4f46e5, #2563eb 60%, #06b6d4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Translucent navbar background */
+.bg-navbar {
+  background-color: color-mix(in srgb, var(--color-page) 80%, transparent);
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-6px);
+  border-color: #818cf8;
+  box-shadow: 0 24px 50px -20px rgba(79, 70, 229, 0.35);
+}
+
+/* Soft indigo light over the hero's page background. */
+.bg-hero-glow {
+  background-image: radial-gradient(
+    ellipse 40% 440px at 50% 100px,
+    rgba(99, 102, 241, 0.2) 0%,
+    rgba(99, 102, 241, 0.14) 45%,
+    rgba(99, 102, 241, 0) 100%
+  );
+}
+
+/* Fine, evenly spaced dots fading gently toward the edges. */
+.bg-dot-pattern {
+  background-size: 24px 24px;
+  background-position: center top;
+  background-image: radial-gradient(circle, rgba(99, 102, 241, 0.22) 1px, transparent 1px);
+  mask-image: radial-gradient(ellipse at 50% 25%, #000 15%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 25%, #000 15%, transparent 80%);
+}
+
+/* Subtle scrollbars matching tokens */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--soft);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #818cf8;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card-hover:hover {
+    transform: none !important;
+  }
+}
+
+/* Shared authentication controls; scoped to the new authentication pages. */
+.auth-input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--page);
+  padding: 12px 14px;
+  color: var(--ink);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.auth-input::placeholder { color: var(--mute); opacity: 0.7; }
+.auth-input:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgb(99 102 241 / 12%); }
+.auth-input[aria-invalid="true"] { border-color: #ef4444; }
+.auth-input[readonly] { opacity: 0.7; }
+.auth-input.pr-12 { padding-right: 3rem; }
+.auth-input.px-0 { padding-left: 0; padding-right: 0; }
+.auth-link { color: #6366f1; font-weight: 600; border-radius: 3px; }
+.auth-link:hover { color: #818cf8; }
+.auth-link:focus-visible { outline: 2px solid #818cf8; outline-offset: 4px; }
