@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Mail, KeyRound, UserRound, CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
-import { authService, emailError, safeNext } from "@/lib/auth";
+import { authService, emailError, safeNext, saveSession, otpCooldownUntil, startOtpCooldown, postLoginPath } from "@/lib/auth";
 import { Field, OtpInput, Submit } from "./AuthFields";
 
 type Mode = "login" | "register" | "register-otp" | "login-otp" | "forgot" | "reset";
@@ -39,21 +39,24 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
   const passwordFields = mode === "login" || mode === "reset" || complete;
   const confirmation = mode === "reset" || complete;
   const normalizedEmail = values.email.trim().toLowerCase();
+  const cooldownPurpose = mode === "reset" ? "password" : mode === "login-otp" ? "login" : "registration";
+  const activeRetryAt = retryAt || otpCooldownUntil(cooldownPurpose, normalizedEmail);
   const loginHref = `/login${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`;
   const registerHref = `/register${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`;
   function path(route: string) { return `${route}?${new URLSearchParams({ email: normalizedEmail, next })}`; }
   function change(key: keyof Values, value: string) {
     setValues(v => ({ ...v, [key]: value }));
     setErrors(e => ({ ...e, [key]: undefined }));
+    if (key === "email") setRetryAt(0);
     setMessage(""); setSuccess("");
   }
 
   useEffect(() => {
-    if (!retryAt) return;
-    const tick = () => setRemaining(Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)));
+    if (!activeRetryAt) return;
+    const tick = () => setRemaining(Math.max(0, Math.ceil((activeRetryAt - Date.now()) / 1000)));
     tick(); const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [retryAt]);
+  }, [activeRetryAt]);
 
   async function run(action: () => Promise<void>) {
     if (pending.current) return;
@@ -89,10 +92,12 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
     await run(async () => {
       if (mode === "login") {
         await authService.requestLoginCode({ email: normalizedEmail, password: values.password });
+        startOtpCooldown("login", normalizedEmail);
         setValues(v => ({ ...v, password: "" }));
         router.push(path("/login/verify-otp"));
       } else if (mode === "register") {
         await authService.requestRegistrationCode(normalizedEmail);
+        startOtpCooldown("registration", normalizedEmail);
         router.push(path("/verify-otp"));
       } else if (complete) {
         await authService.completeRegistration({ name: values.name.trim(), email: normalizedEmail, password: values.password, confirmPassword: values.confirmPassword });
@@ -102,11 +107,12 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
         await authService.verifyRegistrationCode({ email: normalizedEmail, otp: values.otp });
         setVerified(true); setSuccess("Email verified. Complete your account below.");
       } else if (mode === "login-otp") {
-        await authService.verifyLoginCode({ email: normalizedEmail, otp: values.otp });
-        // Session establishment belongs to the API integration task.
-        setSuccess("Your code has been verified.");
+        const session = await authService.verifyLoginCode({ email: normalizedEmail, otp: values.otp });
+        saveSession(session);
+        router.replace(postLoginPath(session, next));
       } else if (mode === "forgot") {
         await authService.requestPasswordCode(normalizedEmail);
+        startOtpCooldown("password", normalizedEmail);
         router.push(path("/reset-password"));
       } else {
         await authService.resetPassword({ email: normalizedEmail, otp: values.otp, newPassword: values.password, confirmPassword: values.confirmPassword });
@@ -125,9 +131,14 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
         router.push(loginHref);
         return;
       }
-      if (mode === "reset") await authService.requestPasswordCode(normalizedEmail);
-      else await authService.requestRegistrationCode(normalizedEmail);
-      setRetryAt(Date.now() + 60_000); setRemaining(60);
+      if (mode === "reset") {
+        await authService.requestPasswordCode(normalizedEmail);
+        setRetryAt(startOtpCooldown("password", normalizedEmail));
+      } else {
+        await authService.requestRegistrationCode(normalizedEmail);
+        setRetryAt(startOtpCooldown("registration", normalizedEmail));
+      }
+      setRemaining(60);
       setSuccess("A new code has been requested. Check your inbox.");
     });
   }
