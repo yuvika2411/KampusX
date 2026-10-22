@@ -16,6 +16,8 @@ import java.util.Optional;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
@@ -48,6 +50,27 @@ class AuthSecurityIntegrationTest {
     void adminWithoutJwtReturns401() throws Exception {
         mockMvc.perform(get("/api/admin/users"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void registrationOtpPreflightAllowsDevelopmentFrontend() throws Exception {
+        mockMvc.perform(options("/api/auth/register/request-otp")
+                        .header(HttpHeaders.ORIGIN, "http://localhost:3000")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
+                                "content-type,authorization"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+                        "http://localhost:3000"))
+                .andExpect(header().string(
+                        HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
+                        org.hamcrest.Matchers.containsString("POST")))
+                .andExpect(header().string(
+                        HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString("Content-Type"),
+                                org.hamcrest.Matchers.containsString("Authorization"))));
     }
 
     @Test
