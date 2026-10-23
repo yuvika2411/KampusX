@@ -16,6 +16,7 @@ public class JwtService {
     private final SecretKey key;
 
     public JwtService(@Value("${jwt.secret}") String secret) {
+
         byte[] keyBytes = Base64.getDecoder().decode(secret);
 
         if (keyBytes.length < 32) {

@@ -1,32 +1,55 @@
+
 package com.kampusx.auth.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final RestClient restClient;
+
+    public EmailService(
+            @Value("${brevo.api.key}") String apiKey) {
+
+        this.restClient = RestClient.builder()
+                .baseUrl("https://api.brevo.com/v3")
+                .defaultHeader("api-key", apiKey)
+                .build();
+    }
 
     public void sendOtpEmail(String email, String otp) {
 
-        SimpleMailMessage message = new SimpleMailMessage();
-
-        message.setTo(email);
-        message.setSubject("KampusX Email Verification OTP");
-
-        message.setText(
+        String content =
                 "Hello,\n\n"
                         + "Your KampusX verification OTP is: " + otp + "\n\n"
                         + "This OTP is valid for 5 minutes.\n"
                         + "Please do not share this OTP with anyone.\n\n"
                         + "Regards,\n"
-                        + "KampusX Team"
+                        + "KampusX Team";
+
+        Map<String, Object> body = Map.of(
+                "sender", Map.of(
+                        "name", "KampusX",
+                        "email", "kampusx2@gmail.com"
+                ),
+                "to", List.of(
+                        Map.of("email", email)
+                ),
+                "subject", "KampusX Email Verification OTP",
+                "textContent", content
         );
 
-        mailSender.send(message);
+        restClient.post()
+                .uri("/smtp/email")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .toBodilessEntity();
     }
 }
