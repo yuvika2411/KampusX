@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.Random;
 import java.security.SecureRandom;
@@ -58,7 +59,7 @@ public class EmailOtpService {
         RequestWindow window = requestWindows.get(key);
 
         if (window != null
-                && LocalDateTime.now().isBefore(
+                && LocalDateTime.now(ZoneOffset.UTC).isBefore(
                 window.startedAt().plus(REQUEST_WINDOW))
                 && window.count() >= MAX_OTP_REQUESTS) {
 
@@ -72,7 +73,7 @@ public class EmailOtpService {
         String key = purpose.name() + ":" + email;
 
         requestWindows.compute(key, (k, old) -> {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
 
             if (old == null
                     || !now.isBefore(old.startedAt().plus(REQUEST_WINDOW))) {
@@ -93,16 +94,18 @@ public class EmailOtpService {
                 emailOtpRepository.findTopByEmailAndPurposeOrderByIdDesc(
                         normalizedEmail, purpose);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
 
         if (latestOtp.isPresent()
                 && latestOtp.get().getCreatedAt() != null
+                && !latestOtp.get().getCreatedAt().isAfter(now)
                 && latestOtp.get().getCreatedAt()
                 .plusSeconds(60).isAfter(now)) {
 
             throw new ResponseStatusException(
                     HttpStatus.TOO_MANY_REQUESTS,
-                    "Please wait 60 seconds before requesting another OTP");
+                    "Please wait 60 seconds before requesting another OTP"
+            );
         }
 
         String otp = String.format(
@@ -117,12 +120,9 @@ public class EmailOtpService {
         emailOtp.setUsed(false);
         emailOtp.setAttempts(0);
 
-        // Count the request before sending the email.
-        recordOtpRequest(normalizedEmail, purpose);
-
-        emailOtpRepository.save(emailOtp);
-
         emailService.sendOtpEmail(normalizedEmail, otp);
+        emailOtpRepository.save(emailOtp);
+        recordOtpRequest(normalizedEmail, purpose);
 
         return otp;
     }
@@ -158,7 +158,8 @@ public class EmailOtpService {
             throw new BadRequestException("OTP has already been used");
         }
 
-        if (emailOtp.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (emailOtp.getExpiresAt()
+                .isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
             throw new BadRequestException("OTP has expired");
         }
 
