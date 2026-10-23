@@ -1,4 +1,3 @@
-
 package com.kampusx.auth.service;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -14,9 +13,7 @@ public class EmailService {
 
     private final RestClient restClient;
 
-    public EmailService(
-            @Value("${brevo.api.key}") String apiKey) {
-
+    public EmailService(@Value("${brevo.api.key}") String apiKey) {
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.brevo.com/v3")
                 .defaultHeader("api-key", apiKey)
@@ -45,11 +42,23 @@ public class EmailService {
                 "textContent", content
         );
 
-        restClient.post()
-                .uri("/smtp/email")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
-                .retrieve()
-                .toBodilessEntity();
+        try {
+            restClient.post()
+                    .uri("/smtp/email")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .toBodilessEntity();
+
+            System.out.println("Brevo OTP request accepted");
+
+        } catch (Exception e) {
+            System.err.println("Brevo request failed: "
+                    + e.getClass().getSimpleName());
+
+            System.err.println("Brevo error: " + e.getMessage());
+
+            throw e;
+        }
     }
 }
