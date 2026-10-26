@@ -3,12 +3,9 @@
 import { useState } from "react";
 import {
   X,
-  Upload,
   ShieldCheck,
   MapPin,
   Camera,
-  AlertCircle,
-  Sparkles,
   ArrowRight,
   Info,
 } from "lucide-react";

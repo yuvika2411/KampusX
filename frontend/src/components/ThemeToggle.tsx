@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Sun, Moon } from "lucide-react";
 
 interface ThemeToggleProps {
@@ -8,42 +8,41 @@ interface ThemeToggleProps {
   className?: string;
 }
 
+function subscribe(callback: () => void) {
+  window.addEventListener("storage", callback);
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  return () => {
+    window.removeEventListener("storage", callback);
+    observer.disconnect();
+  };
+}
+
+function getSnapshot(): "light" | "dark" {
+  const currentAttr = document.documentElement.getAttribute("data-theme");
+  if (currentAttr === "dark" || currentAttr === "light") return currentAttr;
+  const saved = localStorage.getItem("kampusx-theme");
+  if (saved === "dark" || saved === "light") return saved;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function getServerSnapshot(): "light" | "dark" {
+  return "light";
+}
+
+const emptySubscribe = () => () => {};
+
 export default function ThemeToggle({ showLabel = false, className = "" }: ThemeToggleProps) {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    // Read current theme from DOM attribute or localStorage or system preference
-    const currentAttr = document.documentElement.getAttribute("data-theme");
-    if (currentAttr === "dark" || currentAttr === "light") {
-      setTheme(currentAttr);
-      return;
-    }
-
-    const saved = localStorage.getItem("kampusx-theme");
-    if (saved === "dark" || saved === "light") {
-      setTheme(saved);
-      document.documentElement.setAttribute("data-theme", saved);
-      return;
-    }
-
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    } else {
-      setTheme("light");
-    }
-  }, []);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
     localStorage.setItem("kampusx-theme", nextTheme);
   };
 
   if (!mounted) {
-    // Avoid hydration mismatch with an empty placeholder of identical dimensions
     return (
       <div
         className={`w-9 h-9 rounded-xl border border-line bg-card flex items-center justify-center opacity-0 ${className}`}

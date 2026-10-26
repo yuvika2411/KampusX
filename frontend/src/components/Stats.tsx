@@ -6,11 +6,6 @@ import {
   CheckCircle2,
   Users,
   Award,
-  Building,
-  Zap,
-  ArrowUpRight,
-  ShieldAlert,
-  Sparkles,
 } from "lucide-react";
 
 export default function Stats() {

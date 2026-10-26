@@ -10,14 +10,31 @@ export interface LoginResponse { id: number; name: string; email: string; role: 
 export type AuthSession = LoginResponse;
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // On localhost, always route through the same-origin Next.js proxy route handler (/api/...)
+  // which handles long-running SMTP dispatch (up to 120s) and avoids browser CORS preflight blocks.
+  const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  const targetUrl = isLocalhost ? path : (API_BASE_URL ? `${API_BASE_URL}${path}` : path);
+
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(targetUrl, {
       ...init,
       headers: { "Content-Type": "application/json", ...init.headers },
     });
   } catch {
-    throw new Error("Unable to reach KampusX. Check your connection and try again.");
+    // If direct remote call fails, fallback to same-origin route
+    if (typeof window !== "undefined" && targetUrl !== path) {
+      try {
+        response = await fetch(path, {
+          ...init,
+          headers: { "Content-Type": "application/json", ...init.headers },
+        });
+      } catch {
+        throw new Error("Unable to reach KampusX. Check your connection and try again.");
+      }
+    } else {
+      throw new Error("Unable to reach KampusX. Check your connection and try again.");
+    }
   }
 
   const text = await response.text();
@@ -28,7 +45,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       ? body.error
       : typeof body === "object" && body !== null && "message" in body && typeof body.message === "string"
         ? body.message
-        : "Request failed. Please try again.";
+        : typeof body === "string" && body.trim() && body.length < 200
+          ? body.trim()
+          : "Request failed. Please try again.";
     throw new Error(message);
   }
   return body as T;

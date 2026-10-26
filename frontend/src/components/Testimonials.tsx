@@ -1,11 +1,7 @@
 "use client";
 
 import {
-  Quote,
   Star,
-  CheckCircle,
-  Building2,
-  GraduationCap,
   Sparkles,
 } from "lucide-react";
 
@@ -101,7 +97,7 @@ export default function Testimonials() {
                 </div>
 
                 <p className="mt-4 text-sm text-ink/90 leading-relaxed italic">
-                  "{item.quote}"
+                  &ldquo;{item.quote}&rdquo;
                 </p>
               </div>
 

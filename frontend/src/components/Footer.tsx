@@ -5,11 +5,8 @@ import {
   ShieldAlert,
   MapPin,
   Mail,
-  Phone,
   Heart,
   ExternalLink,
-  ShieldCheck,
-  CheckCircle2,
 } from "lucide-react";
 
 export default function Footer() {

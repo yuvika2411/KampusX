@@ -102,7 +102,10 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
       } else if (complete) {
         await authService.completeRegistration({ name: values.name.trim(), email: normalizedEmail, password: values.password, confirmPassword: values.confirmPassword });
         setValues(v => ({ ...v, password: "", confirmPassword: "" }));
-        setSuccess("Your account is ready. You can now sign in.");
+        setSuccess("Your account is ready. Redirecting to sign in…");
+        setTimeout(() => {
+          router.push(loginHref);
+        }, 1500);
       } else if (mode === "register-otp") {
         await authService.verifyRegistrationCode({ email: normalizedEmail, otp: values.otp });
         setVerified(true); setSuccess("Email verified. Complete your account below.");
@@ -117,7 +120,10 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
       } else {
         await authService.resetPassword({ email: normalizedEmail, otp: values.otp, newPassword: values.password, confirmPassword: values.confirmPassword });
         setValues(v => ({ ...v, password: "", confirmPassword: "", otp: "" }));
-        setSuccess("Your password has been updated. You can now sign in.");
+        setSuccess("Your password has been updated. Redirecting to sign in…");
+        setTimeout(() => {
+          router.push(loginHref);
+        }, 1500);
       }
     });
   }
