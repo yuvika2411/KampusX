@@ -4,10 +4,8 @@ import Link from "next/link";
 
 import {
   ArrowRight,
-  ShieldCheck,
   PlusCircle,
   Sparkles,
-  Users,
   CheckCircle,
   LogIn,
 } from "lucide-react";
