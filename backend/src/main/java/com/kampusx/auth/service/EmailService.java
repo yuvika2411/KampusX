@@ -2,8 +2,10 @@ package com.kampusx.auth.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.List;
 import java.util.Map;
@@ -14,7 +16,12 @@ public class EmailService {
     private final RestClient restClient;
 
     public EmailService(@Value("${brevo.api.key}") String apiKey) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);   // 5 seconds to connect
+        factory.setReadTimeout(10000);     // 10 seconds to get a response
+
         this.restClient = RestClient.builder()
+                .requestFactory(factory)
                 .baseUrl("https://api.brevo.com/v3")
                 .defaultHeader("api-key", apiKey)
                 .build();
@@ -50,14 +57,17 @@ public class EmailService {
                     .retrieve()
                     .toBodilessEntity();
 
-            System.out.println("Brevo OTP request accepted");
+            System.out.println("Brevo OTP request accepted for: " + email);
+
+        } catch (RestClientResponseException e) {
+            // Brevo responded with an error (400, 401, 403, etc.)
+            System.err.println("Brevo status: " + e.getStatusCode());
+            System.err.println("Brevo body: " + e.getResponseBodyAsString());
+            throw e;
 
         } catch (Exception e) {
-            System.err.println("Brevo request failed: "
-                    + e.getClass().getSimpleName());
-
-            System.err.println("Brevo error: " + e.getMessage());
-
+            // Network problems, timeouts, DNS, etc.
+            System.err.println("Brevo request failed: " + e);
             throw e;
         }
     }
