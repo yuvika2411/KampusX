@@ -10,19 +10,26 @@ import {
   PlusCircle,
   LogIn,
   Sparkles,
+  LayoutDashboard,
 } from "lucide-react";
 
 import ThemeToggle from "./ThemeToggle";
+import { AuthSession, getSession } from "@/lib/auth";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [session, setSession] = useState<AuthSession | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
+    const active = getSession();
+    if (active) {
+      Promise.resolve().then(() => setSession(active));
+    }
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -81,31 +88,53 @@ export default function Navbar() {
           {/* Action CTAs */}
           <div className="hidden xl:flex items-center gap-3">
             <ThemeToggle />
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-mute hover:text-ink transition-colors"
-            >
-              <LogIn className="w-4 h-4 text-mute group-hover:text-ink" />
-              <span>Login</span>
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-gradient hover:opacity-95 shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/35 hover:-translate-y-0.5 transition-all duration-200"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Get Started</span>
-            </Link>
+            {session ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-gradient hover:opacity-95 shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/35 hover:-translate-y-0.5 transition-all duration-200"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Go to Dashboard</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-mute hover:text-ink transition-colors"
+                >
+                  <LogIn className="w-4 h-4 text-mute group-hover:text-ink" />
+                  <span>Login</span>
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-gradient hover:opacity-95 shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/35 hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Get Started</span>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle Button & Theme Switch */}
           <div className="flex xl:hidden items-center gap-2">
             <ThemeToggle />
-            <Link
-              href="/register"
-              className="hidden min-[400px]:inline-flex px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-gradient"
-            >
-              Get Started
-            </Link>
+            {session ? (
+              <Link
+                href="/dashboard"
+                className="hidden min-[400px]:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-gradient"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Dashboard</span>
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="hidden min-[400px]:inline-flex px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-gradient"
+              >
+                Get Started
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               type="button"
@@ -146,22 +175,35 @@ export default function Navbar() {
           </div>
 
           <div className="pt-3 border-t border-line flex flex-col gap-2.5">
-            <Link
-              href="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-semibold text-ink hover:bg-soft rounded-xl transition-colors"
-            >
-              <LogIn className="w-4 h-4 text-mute" />
-              <span>Login</span>
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-gradient shadow-md shadow-indigo-500/20"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Get Started</span>
-            </Link>
+            {session ? (
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-gradient shadow-md shadow-indigo-500/20"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Go to Dashboard</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-semibold text-ink hover:bg-soft rounded-xl transition-colors"
+                >
+                  <LogIn className="w-4 h-4 text-mute" />
+                  <span>Login</span>
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-gradient shadow-md shadow-indigo-500/20"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Get Started</span>
+                </Link>
+              </>
+            )}
           </div>
 
           <div className="pt-2 text-center">
