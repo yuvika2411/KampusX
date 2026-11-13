@@ -9,7 +9,7 @@ export interface ResetPasswordRequest { email: string; otp: string; newPassword:
 export interface LoginResponse { id: number; name: string; email: string; role: string; token: string }
 export type AuthSession = LoginResponse;
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   // On localhost, always route through the same-origin Next.js proxy route handler (/api/...)
   // which handles long-running SMTP dispatch (up to 120s) and avoids browser CORS preflight blocks.
   const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
@@ -75,6 +75,10 @@ export const authService = {
     post(`/api/auth/password/request-otp?email=${encodeURIComponent(email)}`).then(() => undefined),
   resetPassword: (request: ResetPasswordRequest): Promise<void> =>
     post("/api/auth/password/reset", request).then(() => undefined),
+  getCurrentUser: (): Promise<{ id: number; name: string; email: string; role: string }> =>
+    request<{ id: number; name: string; email: string; role: string }>("/api/users/me", {
+      headers: authHeaders(),
+    }),
 };
 
 export function saveSession(session: LoginResponse): void {
@@ -82,6 +86,7 @@ export function saveSession(session: LoginResponse): void {
 }
 
 export function getSession(): AuthSession | null {
+  if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(SESSION_KEY);
   if (!raw) return null;
   try {
@@ -93,18 +98,47 @@ export function getSession(): AuthSession | null {
   }
 }
 
+export async function fetchCurrentUser(): Promise<AuthSession | null> {
+  const session = getSession();
+  if (!session?.token) return null;
+  try {
+    const user = await authService.getCurrentUser();
+    const updated: AuthSession = {
+      ...session,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    };
+    saveSession(updated);
+    return updated;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message.toLowerCase() : "";
+    if (msg.includes("authentication") || msg.includes("unauthorized") || msg.includes("forbidden")) {
+      clearSession();
+      return null;
+    }
+    return session;
+  }
+}
+
 export function clearSession(): void {
-  localStorage.removeItem(SESSION_KEY);
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(SESSION_KEY);
+  }
 }
 
 export function authHeaders(): HeadersInit {
   const session = getSession();
-  return session ? { Authorization: `Bearer ${session.token}` } : {};
+  return session?.token ? { Authorization: `Bearer ${session.token}` } : {};
 }
 
-export function postLoginPath(session: AuthSession, next: string): string {
-  if (next === "/issues/new" && session.role !== "STUDENT") return "/";
-  return next;
+export function postLoginPath(session: AuthSession, next?: string | null): string {
+  if (next && next !== "/" && next.startsWith("/") && !next.startsWith("//")) {
+    if (next === "/issues/new" && session.role !== "STUDENT") return "/dashboard";
+    return next;
+  }
+  return "/dashboard";
 }
 
 export function otpCooldownUntil(purpose: string, email: string): number {
