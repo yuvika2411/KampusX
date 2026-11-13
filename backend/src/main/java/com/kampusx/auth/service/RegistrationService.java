@@ -1,6 +1,7 @@
 package com.kampusx.auth.service;
 
 import com.kampusx.auth.dto.CompleteRegistrationRequest;
+import com.kampusx.auth.dto.LoginResponse;
 import com.kampusx.auth.entity.EmailOtp;
 import com.kampusx.auth.entity.OtpPurpose;
 import com.kampusx.auth.repository.EmailOtpRepository;
@@ -25,6 +26,7 @@ public class RegistrationService {
     private final EmailOtpService emailOtpService;
     private final EmailOtpRepository emailOtpRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public void requestRegistrationOtp(String email) {
 
@@ -57,7 +59,7 @@ public class RegistrationService {
 
 
     @Transactional
-    public void completeRegistration(CompleteRegistrationRequest request) {
+    public LoginResponse completeRegistration(CompleteRegistrationRequest request) {
 
         if (request == null || request.getEmail() == null
                 || request.getEmail().isBlank()) {
@@ -115,8 +117,18 @@ public class RegistrationService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.STUDENT);
 
-        userRepository.save(user);
+        user = userRepository.save(user);
         verifiedOtp.setRegistrationCompleted(true);
         emailOtpRepository.save(verifiedOtp);
+
+        String token = jwtService.generateToken(user.getEmail());
+
+        return new LoginResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole().name(),
+                token
+        );
     }
 }

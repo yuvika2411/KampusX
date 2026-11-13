@@ -65,8 +65,8 @@ export const authService = {
     post(`/api/auth/register/request-otp?email=${encodeURIComponent(email)}`).then(() => undefined),
   verifyRegistrationCode: (request: VerifyOtpRequest): Promise<void> =>
     post("/api/auth/register/verify-otp", request).then(() => undefined),
-  completeRegistration: (request: CompleteRegistrationRequest): Promise<void> =>
-    post("/api/auth/register/complete", request).then(() => undefined),
+  completeRegistration: (request: CompleteRegistrationRequest): Promise<LoginResponse> =>
+    post<LoginResponse>("/api/auth/register/complete", request),
   requestLoginCode: (request: LoginOtpRequest): Promise<void> =>
     post("/api/auth/login/request-otp", request).then(() => undefined),
   verifyLoginCode: (request: VerifyOtpRequest): Promise<LoginResponse> =>

@@ -100,12 +100,25 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
         startOtpCooldown("registration", normalizedEmail);
         router.push(path("/verify-otp"));
       } else if (complete) {
-        await authService.completeRegistration({ name: values.name.trim(), email: normalizedEmail, password: values.password, confirmPassword: values.confirmPassword });
+        const session = await authService.completeRegistration({
+          name: values.name.trim(),
+          email: normalizedEmail,
+          password: values.password,
+          confirmPassword: values.confirmPassword,
+        });
         setValues(v => ({ ...v, password: "", confirmPassword: "" }));
-        setSuccess("Your account is ready. Redirecting to sign in…");
-        setTimeout(() => {
-          router.push(loginHref);
-        }, 1500);
+        if (session && typeof session === "object" && session.token) {
+          saveSession(session);
+          setSuccess("Account created successfully! Redirecting to dashboard…");
+          setTimeout(() => {
+            router.replace(postLoginPath(session, next));
+          }, 1000);
+        } else {
+          setSuccess("Your account is ready. Redirecting to sign in…");
+          setTimeout(() => {
+            router.push(loginHref);
+          }, 1500);
+        }
       } else if (mode === "register-otp") {
         await authService.verifyRegistrationCode({ email: normalizedEmail, otp: values.otp });
         setVerified(true); setSuccess("Email verified. Complete your account below.");

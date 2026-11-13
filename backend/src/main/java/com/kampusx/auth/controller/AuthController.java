@@ -37,12 +37,12 @@ public class AuthController {
     }
 
     @PostMapping("/register/complete")
-    public ResponseEntity<String> completeRegistration(
+    public ResponseEntity<LoginResponse> completeRegistration(
             @RequestBody CompleteRegistrationRequest request) {
 
-        registrationService.completeRegistration(request);
-
-        return ResponseEntity.ok("Registration completed successfully");
+        return ResponseEntity.ok(
+                registrationService.completeRegistration(request)
+        );
     }
 
     @PostMapping("/login/request-otp")
