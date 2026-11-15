@@ -1,5 +1,6 @@
 package com.kampusx.issue.service;
 
+import com.kampusx.common.BadRequestException;
 import com.kampusx.common.ResourceNotFoundException;
 
 import com.kampusx.issue.dto.CategoryResponse;
@@ -9,13 +10,14 @@ import com.kampusx.user.entity.Role;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
@@ -28,6 +30,7 @@ public class CategoryService {
                 .toList();
     }
 
+    @Transactional
     public CategoryResponse assignCategoryHead(Long categoryId, Long userId) {
 
         Category category = categoryRepository.findById(categoryId)
@@ -37,7 +40,7 @@ public class CategoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() != Role.CATEGORY_HEAD) {
-            throw new AccessDeniedException("User is not a Category Head");
+            throw new BadRequestException("User is not a Category Head");
         }
 
         category.setCategoryHead(user);
