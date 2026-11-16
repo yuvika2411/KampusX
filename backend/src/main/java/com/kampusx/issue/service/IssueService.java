@@ -119,18 +119,36 @@ public class IssueService {
         Long currentUserId = getCurrentUserId();
 
         Map<Long, Long> voteCounts = new HashMap<>();
-        for (Object[] row : issueVoteRepository.countVotesByIssueIds(issueIds)) {
-            voteCounts.put((Long) row[0], (Long) row[1]);
+        List<Object[]> voteRows = issueVoteRepository.countVotesByIssueIds(issueIds);
+        if (voteRows != null) {
+            for (Object[] row : voteRows) {
+                if (row != null && row.length >= 2 && row[0] instanceof Number id && row[1] instanceof Number cnt) {
+                    voteCounts.put(id.longValue(), cnt.longValue());
+                }
+            }
         }
 
         Map<Long, Long> commentCounts = new HashMap<>();
-        for (Object[] row : issueCommentRepository.countCommentsByIssueIds(issueIds)) {
-            commentCounts.put((Long) row[0], (Long) row[1]);
+        List<Object[]> commentRows = issueCommentRepository.countCommentsByIssueIds(issueIds);
+        if (commentRows != null) {
+            for (Object[] row : commentRows) {
+                if (row != null && row.length >= 2 && row[0] instanceof Number id && row[1] instanceof Number cnt) {
+                    commentCounts.put(id.longValue(), cnt.longValue());
+                }
+            }
         }
 
-        Set<Long> userVotedIssueIds = currentUserId != null
-                ? new HashSet<>(issueVoteRepository.findVotedIssueIdsByUserId(issueIds, currentUserId))
-                : Collections.emptySet();
+        Set<Long> userVotedIssueIds = new HashSet<>();
+        if (currentUserId != null) {
+            List<Long> votedIds = issueVoteRepository.findVotedIssueIdsByUserId(issueIds, currentUserId);
+            if (votedIds != null) {
+                for (Object idObj : votedIds) {
+                    if (idObj instanceof Number n) {
+                        userVotedIssueIds.add(n.longValue());
+                    }
+                }
+            }
+        }
 
         return issues.stream()
                 .map(issue -> toResponse(
@@ -192,6 +210,7 @@ public class IssueService {
         return toResponseList(issueRepository.findAll());
     }
 
+    @Transactional(readOnly = true)
     public List<IssueResponse> getMyIssues(String email) {
 
         User student = userRepository.findByEmail(email)
@@ -200,11 +219,13 @@ public class IssueService {
         return toResponseList(issueRepository.findByReporterId(student.getId()));
     }
 
+    @Transactional(readOnly = true)
     public List<IssueResponse> getIssuesForCategoryHead(Long categoryHeadId) {
 
         return toResponseList(issueRepository.findByCategoryCategoryHeadId(categoryHeadId));
     }
 
+    @Transactional(readOnly = true)
     public IssueResponse getIssueById(Long id) {
 
         Issue issue = issueRepository.findById(id)
@@ -424,6 +445,7 @@ public class IssueService {
         issueRepository.delete(issue);
     }
 
+    @Transactional(readOnly = true)
     public List<IssueResponse> getAssignedIssues(String email) {
 
         User resolver = userRepository.findByEmail(email)
@@ -432,6 +454,7 @@ public class IssueService {
         return toResponseList(issueRepository.findByResolverId(resolver.getId()));
     }
 
+    @Transactional(readOnly = true)
     public Page<IssueResponse> searchIssues(
             String status,
             String search,
