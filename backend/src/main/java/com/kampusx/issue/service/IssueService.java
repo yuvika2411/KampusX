@@ -337,10 +337,10 @@ public class IssueService {
             );
         }
 
-        // Only CLOSED issues can be reopened
-        if (issue.getStatus() != IssueStatus.CLOSED) {
+        // Only RESOLVED or CLOSED issues can be reopened
+        if (issue.getStatus() != IssueStatus.CLOSED && issue.getStatus() != IssueStatus.RESOLVED) {
             throw new BadRequestException(
-                    "Only closed issues can be reopened"
+                    "Only resolved or closed issues can be reopened"
             );
         }
 
