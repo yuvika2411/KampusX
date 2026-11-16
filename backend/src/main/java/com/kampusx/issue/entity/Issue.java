@@ -21,6 +21,13 @@ public class Issue {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "floor_room", length = 100)
+    private String floorRoom;
+
+    @org.hibernate.annotations.CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private java.time.LocalDateTime createdAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private IssueStatus status = IssueStatus.REPORTED;

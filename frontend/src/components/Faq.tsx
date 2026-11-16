@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, HelpCircle } from "lucide-react";
+import { ChevronDown, HelpCircle, ExternalLink } from "lucide-react";
 
 interface FaqItem {
   question: string;
@@ -14,40 +14,40 @@ export default function Faq() {
 
   const faqs: FaqItem[] = [
     {
-      category: "Privacy & Identity",
-      question: "How is reporter accountability and privacy handled?",
-      answer:
-        "To maintain accountability and prevent spam or duplicate complaints, issue reporting requires sign-in with your institutional email and password. In-app visibility emphasizes the issue location and description to help maintenance staff take action quickly while protecting your personal credentials.",
-    },
-    {
-      category: "Administration & Workflow",
-      question: "Who reviews and addresses the reported issues?",
-      answer:
-        "Issues are organized by location and category to reach the relevant campus department. For instance, hostel plumbing and electrical issues relate to the hostel caretaking and estate staff; Wi-Fi and lab computer issues relate to campus IT coordinators; and classroom infrastructure relates to the estate maintenance unit.",
-    },
-    {
-      category: "Community Features",
-      question: "How does the community upvoting mechanism work?",
-      answer:
-        "When an issue is posted, fellow students who notice the same issue can upvote it. Issues with higher upvote counts are highlighted on campus feed views and administrative queues, helping maintenance teams identify which campus issues have the broadest student impact without creating duplicate tickets.",
-    },
-    {
-      category: "Accountability & Monitoring",
-      question: "How are resolution targets monitored?",
-      answer:
-        "Categories have suggested target turnaround benchmarks (such as 12 to 48 hours for urgent utilities). Dashboards display open tickets by priority so department teams and student representatives can track unresolved items transparently.",
-    },
-    {
-      category: "Quality Assurance",
-      question: "How does resolution verification work?",
-      answer:
-        "Technicians log resolution notes or photos upon completing repairs. The student who originally reported the issue can view the update and provide feedback on whether the issue has been adequately resolved.",
-    },
-    {
       category: "Eligibility & Access",
       question: "Who can use the KampusX platform?",
       answer:
-        "KampusX is designed for students, hostellers, and staff across KIET Group of Institutions. Access will be supported via institutional email and password authentication, connecting directly to the Spring Boot backend.",
+        "KampusX is designed exclusively for verified students and staff of KIET Group of Institutions. Access requires an active institutional @kiet.edu email address.",
+    },
+    {
+      category: "Authentication",
+      question: "How does authentication work?",
+      answer:
+        "KampusX uses secure email OTP (One-Time Password) verification. Upon entering your @kiet.edu email, a 6-digit code is dispatched directly to your inbox. There is no need to remember or manage passwords for signing in.",
+    },
+    {
+      category: "Administration & Workflow",
+      question: "Who reviews and addresses reported issues?",
+      answer:
+        "Issues are routed directly to the designated Category Head (such as Hostel Wardens, Campus IT Cell, Estate Maintenance, or Academic Lab Coordinators). The Category Head reviews the ticket queue and assigns a field Resolver (technician) to handle the physical repair.",
+    },
+    {
+      category: "Privacy & Identity",
+      question: "What reporter information is visible to other users?",
+      answer:
+        "The issue title, description, category, and building location are visible on the campus feed so peers can upvote and add comments. Reporter emails and private credentials are never shared publicly.",
+    },
+    {
+      category: "Community Features",
+      question: "How does community upvoting work?",
+      answer:
+        "When an issue is posted, fellow students affected by the same problem can upvote the ticket. Upvotes highlight widespread campus concerns on Category Head triage queues, helping maintenance teams prioritize without duplicate tickets being filed.",
+    },
+    {
+      category: "Verification & Sign-off",
+      question: "How does resolution verification work?",
+      answer:
+        "Once the assigned field Resolver finishes work and sets the status to RESOLVED, the original student reporter can confirm the fix by closing the ticket. If the repair is unsatisfactory or incomplete, the student can reopen the ticket with one click.",
     },
   ];
 
@@ -120,17 +120,20 @@ export default function Faq() {
         <div className="mt-10 p-5 rounded-2xl bg-soft border border-line flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div>
             <h4 className="text-sm font-bold text-ink">
-              Have a specific question not covered here?
+              Have questions regarding campus maintenance policies?
             </h4>
             <p className="text-xs text-mute mt-0.5">
-              Reach out directly to the KIET Student Welfare & Technical Support Desk.
+              Contact the KIET Dean of Student Welfare (DSW) or your respective Hostel Warden Office.
             </p>
           </div>
           <a
-            href="mailto:support@kampusx.kiet.edu"
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-card text-ink border border-line hover:bg-soft shadow-xs transition-colors shrink-0"
+            href="https://www.kiet.edu"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-card text-ink border border-line hover:bg-soft shadow-xs transition-colors shrink-0"
           >
-            Contact Campus Desk
+            <span>Visit kiet.edu</span>
+            <ExternalLink className="w-3 h-3 text-mute" />
           </a>
         </div>
       </div>

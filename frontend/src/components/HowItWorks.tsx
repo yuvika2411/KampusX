@@ -20,61 +20,61 @@ export default function HowItWorks() {
     {
       step: "01",
       title: "Report an Issue",
-      subtitle: "Effortless reporting via campus directory",
+      subtitle: "Submit with category and campus location",
       description:
-        "Spotted a leaking faucet in Aryabhatta Hostel, a malfunctioning projector in Block-B, or poor Wi-Fi coverage in the Central Library? Attach a photo, pick your campus building location, and submit with your verified institutional account.",
+        "Spotted a leaking faucet in Aryabhatt Hostel, a display issue in the HP-Intel Lab, or Wi-Fi drops in the Library? Attach photo evidence, specify your building location, and submit via your verified @kiet.edu account.",
       bullets: [
-        "Select campus location from KIET building directory",
-        "Upload photo evidence from your phone or laptop",
-        "Categorized by department to streamline routing",
+        "Select real campus locations (Aryabhatt, Gargi, Academic Blocks, Labs)",
+        "Attach supporting photo evidence",
+        "Categorized by department for direct Category Head triage",
       ],
       icon: Camera,
       badge: "Step 1: Submission",
       cardVisual: {
-        title: "Report New Campus Issue",
-        field1: "Location: Aryabhatta Hostel • Block B • Floor 2",
-        field2: "Issue: Water purifier pressure pump malfunctioning",
-        statusBadge: "Tags: Sanitation • High Priority",
+        title: "Example Issue Submission",
+        field1: "Location: Aryabhatt Hostel",
+        field2: "Category: HOSTEL • RO Purifier Maintenance",
+        statusBadge: "Status: REPORTED",
       },
     },
     {
       step: "02",
       title: "Gain Community Support",
-      subtitle: "Collective student voices highlight urgent needs",
+      subtitle: "Collective upvotes and comments highlight urgency",
       description:
-        "Once published on the campus board, batchmates and hostel residents can upvote the ticket. Collective backing elevates the visibility of urgent issues on maintenance queues, helping teams prioritize without duplicate tickets.",
+        "Once posted, batchmates and hostel residents can upvote the ticket and leave comments. Community support elevates urgent concerns on department triage queues without creating duplicate tickets.",
       bullets: [
-        "Prevents duplicate tickets for the same hostel or lab issue",
-        "Community upvotes highlight priorities on administrative dashboards",
-        "Peer comments provide helpful context and updates",
+        "Prevents duplicate tickets for the same facility issue",
+        "Community upvotes highlight urgency on departmental queues",
+        "Student comments provide ongoing context",
       ],
       icon: Users2,
       badge: "Step 2: Amplification",
       cardVisual: {
-        title: "Community Upvote Milestone",
-        field1: "142 Students Backed This Request",
-        field2: "+64 upvotes from hostel residents",
-        statusBadge: "Community Supported Milestone",
+        title: "Example Community Backing",
+        field1: "35 Students Upvoted This Request",
+        field2: "Comments active with hostel updates",
+        statusBadge: "Milestone: Elevated Priority",
       },
     },
     {
       step: "03",
-      title: "Track Resolution",
-      subtitle: "Transparent milestones with completion logging",
+      title: "Track & Confirm Resolution",
+      subtitle: "Transparent resolver workflow and student sign-off",
       description:
-        "No more black holes where complaints vanish. Monitor status changes as maintenance teams assign field technicians. Once work is completed, technicians log notes or photos, and students can provide confirmation.",
+        "Track the ticket as the Category Head assigns a dedicated Resolver. When the resolver marks the repair as RESOLVED, the reporting student confirms closure or reopens the ticket if needed.",
       bullets: [
-        "Live status: Submitted → Acknowledged → In Progress → Resolved",
-        "Technician completion notes and verification photos",
-        "Student feedback upon resolution review",
+        "Lifecycle: REPORTED → ASSIGNED → IN_PROGRESS → RESOLVED",
+        "Resolver updates status when maintenance begins",
+        "Student reporter confirms closure or reopens the issue",
       ],
       icon: CheckCircle2,
       badge: "Step 3: Verification",
       cardVisual: {
-        title: "Work Order Completed",
-        field1: "Technician: Manoj K. (Estate Maintenance #402)",
-        field2: "Action Taken: Filter cartridge replaced & pressure restored",
-        statusBadge: "Status: Resolved & Student Confirmed",
+        title: "Example Resolution",
+        field1: "Resolver: Assigned Department Resolver",
+        field2: "Status: Marked RESOLVED by Field Resolver",
+        statusBadge: "Action: Student Confirmed & Closed",
       },
     },
   ];
@@ -163,7 +163,7 @@ export default function HowItWorks() {
                         {item.cardVisual.title}
                       </span>
                       <span className="text-[10px] font-semibold text-indigo-400 bg-card px-1.5 py-0.5 rounded border border-line">
-                        Live Preview
+                        Example
                       </span>
                     </div>
                     <div className="text-[11px] font-medium text-mute truncate">

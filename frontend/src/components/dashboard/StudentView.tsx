@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   PlusCircle,
   ThumbsUp,
@@ -15,8 +15,17 @@ import {
   Sparkles,
   Loader2,
   FolderOpen,
+  Building,
+  RefreshCw,
 } from "lucide-react";
-import { api, IssueResponse, CategoryResponse, IssueStatus, IssuePriority } from "@/lib/api";
+import {
+  api,
+  IssueResponse,
+  CategoryResponse,
+  LocationResponse,
+  IssueStatus,
+  IssuePriority,
+} from "@/lib/api";
 import { AuthSession } from "@/lib/auth";
 
 interface StudentViewProps {
@@ -24,24 +33,62 @@ interface StudentViewProps {
   initialTab?: "my" | "feed" | "report";
 }
 
+const LOCATION_TYPE_LABELS: Record<string, string> = {
+  BOYS_HOSTEL: "Boys Hostels",
+  GIRLS_HOSTEL: "Girls Hostels",
+  BLOCK: "Academic & Administrative Blocks",
+  FOOD_OUTLET: "Cafeterias & Food Outlets",
+  LAB: "Laboratories & Centres of Excellence",
+  WIFI: "Campus & Hostel Wi-Fi Zones",
+  OTHER_FACILITY: "Campus Facilities & Amenities",
+};
+
 export default function StudentView({ user, initialTab = "my" }: StudentViewProps) {
   const [activeTab, setActiveTab] = useState<"my" | "feed" | "report">(initialTab);
   const [myIssues, setMyIssues] = useState<IssueResponse[]>([]);
   const [allIssues, setAllIssues] = useState<IssueResponse[]>([]);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
+  const [locations, setLocations] = useState<LocationResponse[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [locationSearch, setLocationSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
   // Form states for creating an issue
   const [formTitle, setFormTitle] = useState("");
-  const [formDescription, setFormDescription] = useState("");
   const [formCategoryId, setFormCategoryId] = useState<number | "">("");
-  const [formLocation, setFormLocation] = useState("");
+  const [formLocationId, setFormLocationId] = useState<number | "">("");
+  const [formFloorRoom, setFormFloorRoom] = useState("");
+  const [formDescription, setFormDescription] = useState("");
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    category?: string;
+    location?: string;
+    floorRoom?: string;
+    description?: string;
+  }>({});
   const [actionError, setActionError] = useState("");
+
+  const loadLocations = () => {
+    setLocationsLoading(true);
+    setLocationsError(null);
+    api.locations
+      .getAll()
+      .then((data) => {
+        setLocations(data || []);
+      })
+      .catch((err) => {
+        setLocationsError(err instanceof Error ? err.message : "Failed to load locations");
+      })
+      .finally(() => {
+        setLocationsLoading(false);
+      });
+  };
 
   const loadData = () => {
     setLoading(true);
@@ -50,10 +97,12 @@ export default function StudentView({ user, initialTab = "my" }: StudentViewProp
       api.issues.getMyIssues(),
       api.issues.getAllIssues(),
       api.categories.getAll(),
-    ]).then(([myRes, allRes, catRes]) => {
+      api.locations.getAll(),
+    ]).then(([myRes, allRes, catRes, locRes]) => {
       if (myRes.status === "fulfilled") setMyIssues(myRes.value || []);
       if (allRes.status === "fulfilled") setAllIssues(allRes.value || []);
       if (catRes.status === "fulfilled") setCategories(catRes.value || []);
+      if (locRes.status === "fulfilled") setLocations(locRes.value || []);
       setLoading(false);
     });
   };
@@ -64,11 +113,13 @@ export default function StudentView({ user, initialTab = "my" }: StudentViewProp
       api.issues.getMyIssues(),
       api.issues.getAllIssues(),
       api.categories.getAll(),
-    ]).then(([myRes, allRes, catRes]) => {
+      api.locations.getAll(),
+    ]).then(([myRes, allRes, catRes, locRes]) => {
       if (!isMounted) return;
       if (myRes.status === "fulfilled") setMyIssues(myRes.value || []);
       if (allRes.status === "fulfilled") setAllIssues(allRes.value || []);
       if (catRes.status === "fulfilled") setCategories(catRes.value || []);
+      if (locRes.status === "fulfilled") setLocations(locRes.value || []);
       setLoading(false);
     });
     return () => {
@@ -107,19 +158,39 @@ export default function StudentView({ user, initialTab = "my" }: StudentViewProp
 
   const handleCreateIssue = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: typeof fieldErrors = {};
+
     if (!formTitle.trim()) {
-      setFormError("Issue title is required");
-      return;
+      errors.title = "Issue title is required";
+    } else if (formTitle.trim().length > 255) {
+      errors.title = "Title must not exceed 255 characters";
     }
-    if (!formDescription.trim()) {
-      setFormError("Issue description is required");
-      return;
-    }
+
     if (!formCategoryId) {
-      setFormError("Please select a category");
+      errors.category = "Please select a category";
+    }
+
+    if (!formLocationId) {
+      errors.location = "Please select a campus location";
+    }
+
+    if (!formFloorRoom.trim()) {
+      errors.floorRoom = "Floor / Room is required (e.g. 2nd Floor, Room 204)";
+    } else if (formFloorRoom.trim().length > 100) {
+      errors.floorRoom = "Floor / Room must not exceed 100 characters";
+    }
+
+    if (!formDescription.trim()) {
+      errors.description = "Detailed description is required";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setFormError("Please fix the highlighted errors before submitting.");
       return;
     }
 
+    setFieldErrors({});
     setFormSubmitting(true);
     setFormError("");
     setFormSuccess("");
@@ -129,14 +200,17 @@ export default function StudentView({ user, initialTab = "my" }: StudentViewProp
         title: formTitle.trim(),
         description: formDescription.trim(),
         categoryId: Number(formCategoryId),
-        locationId: 1, // Default campus zone id if location endpoint is unset
+        locationId: Number(formLocationId),
+        floorRoom: formFloorRoom.trim(),
       });
 
       setFormSuccess("Issue submitted successfully! Your campus desk has been notified.");
       setFormTitle("");
       setFormDescription("");
       setFormCategoryId("");
-      setFormLocation("");
+      setFormLocationId("");
+      setFormFloorRoom("");
+      setFieldErrors({});
       loadData();
       setTimeout(() => {
         setActiveTab("my");
@@ -148,6 +222,21 @@ export default function StudentView({ user, initialTab = "my" }: StudentViewProp
       setFormSubmitting(false);
     }
   };
+
+  const groupedLocations = useMemo(() => {
+    const groups: Record<string, LocationResponse[]> = {};
+    const filtered = locations.filter((loc) =>
+      locationSearch === "" ||
+      loc.name.toLowerCase().includes(locationSearch.toLowerCase()) ||
+      (loc.locationType && loc.locationType.toLowerCase().includes(locationSearch.toLowerCase()))
+    );
+    for (const loc of filtered) {
+      const type = loc.locationType || "OTHER_FACILITY";
+      if (!groups[type]) groups[type] = [];
+      groups[type].push(loc);
+    }
+    return groups;
+  }, [locations, locationSearch]);
 
   const filteredFeed = allIssues.filter((item) => {
     const matchesSearch =
@@ -594,13 +683,20 @@ export default function StudentView({ user, initialTab = "my" }: StudentViewProp
               </label>
               <input
                 type="text"
-                required
-                maxLength={150}
+                maxLength={255}
                 placeholder="e.g. Central Library 3rd Floor Wi-Fi AP Dropping Connections"
                 value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                className="w-full rounded-xl border border-line bg-soft px-3.5 py-2.5 text-xs font-medium text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-[#818cf8]"
+                onChange={(e) => {
+                  setFormTitle(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, title: undefined }));
+                }}
+                className={`w-full rounded-xl border ${
+                  fieldErrors.title ? "border-rose-500" : "border-line"
+                } bg-soft px-3.5 py-2.5 text-xs font-medium text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-[#818cf8]`}
               />
+              {fieldErrors.title && (
+                <p className="text-[11px] text-rose-500 mt-1">{fieldErrors.title}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -609,10 +705,14 @@ export default function StudentView({ user, initialTab = "my" }: StudentViewProp
                   Category <span className="text-rose-500">*</span>
                 </label>
                 <select
-                  required
                   value={formCategoryId}
-                  onChange={(e) => setFormCategoryId(Number(e.target.value) || "")}
-                  className="w-full rounded-xl border border-line bg-soft px-3.5 py-2.5 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-[#818cf8]"
+                  onChange={(e) => {
+                    setFormCategoryId(Number(e.target.value) || "");
+                    setFieldErrors((prev) => ({ ...prev, category: undefined }));
+                  }}
+                  className={`w-full rounded-xl border ${
+                    fieldErrors.category ? "border-rose-500" : "border-line"
+                  } bg-soft px-3.5 py-2.5 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-[#818cf8]`}
                 >
                   <option value="">Select a Category</option>
                   {categories.map((c) => (
@@ -621,20 +721,77 @@ export default function StudentView({ user, initialTab = "my" }: StudentViewProp
                     </option>
                   ))}
                 </select>
+                {fieldErrors.category && (
+                  <p className="text-[11px] text-rose-500 mt-1">{fieldErrors.category}</p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-ink mb-1.5">
-                  Location / Floor / Room
+                <label className="block text-xs font-bold text-ink mb-1.5 flex items-center justify-between">
+                  <span>Campus Location <span className="text-rose-500">*</span></span>
+                  {locationsLoading && <Loader2 size={12} className="animate-spin text-indigo-500" />}
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Aryabhatta Block B, 2nd Floor"
-                  value={formLocation}
-                  onChange={(e) => setFormLocation(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-soft px-3.5 py-2.5 text-xs font-medium text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-[#818cf8]"
-                />
+
+                {locationsError ? (
+                  <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center justify-between">
+                    <span>{locationsError}</span>
+                    <button
+                      type="button"
+                      onClick={loadLocations}
+                      className="text-[11px] font-bold text-indigo-400 hover:underline flex items-center gap-1"
+                    >
+                      <RefreshCw size={11} /> Retry
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={formLocationId}
+                    onChange={(e) => {
+                      setFormLocationId(Number(e.target.value) || "");
+                      setFieldErrors((prev) => ({ ...prev, location: undefined }));
+                    }}
+                    className={`w-full rounded-xl border ${
+                      fieldErrors.location ? "border-rose-500" : "border-line"
+                    } bg-soft px-3.5 py-2.5 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-[#818cf8]`}
+                  >
+                    <option value="">-- Choose Building / Facility --</option>
+                    {Object.entries(groupedLocations).map(([type, locs]) => (
+                      <optgroup key={type} label={LOCATION_TYPE_LABELS[type] || type}>
+                        {locs.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                )}
+                {fieldErrors.location && (
+                  <p className="text-[11px] text-rose-500 mt-1">{fieldErrors.location}</p>
+                )}
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-ink mb-1.5">
+                Floor / Room <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                maxLength={100}
+                placeholder="e.g. 2nd Floor, Room 204"
+                value={formFloorRoom}
+                onChange={(e) => {
+                  setFormFloorRoom(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, floorRoom: undefined }));
+                }}
+                className={`w-full rounded-xl border ${
+                  fieldErrors.floorRoom ? "border-rose-500" : "border-line"
+                } bg-soft px-3.5 py-2.5 text-xs font-medium text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-[#818cf8]`}
+              />
+              {fieldErrors.floorRoom && (
+                <p className="text-[11px] text-rose-500 mt-1">{fieldErrors.floorRoom}</p>
+              )}
             </div>
 
             <div>
@@ -642,19 +799,30 @@ export default function StudentView({ user, initialTab = "my" }: StudentViewProp
                 Detailed Description <span className="text-rose-500">*</span>
               </label>
               <textarea
-                required
                 rows={4}
-                placeholder="Describe the issue, recurrence, and impact so technicians can prepare the right tools and replacement parts…"
+                placeholder="Describe the issue, recurrence, and impact so the assigned resolver understands the problem…"
                 value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                className="w-full rounded-xl border border-line bg-soft px-3.5 py-2.5 text-xs font-medium text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-[#818cf8] resize-none"
+                onChange={(e) => {
+                  setFormDescription(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, description: undefined }));
+                }}
+                className={`w-full rounded-xl border ${
+                  fieldErrors.description ? "border-rose-500" : "border-line"
+                } bg-soft px-3.5 py-2.5 text-xs font-medium text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-[#818cf8] resize-none`}
               />
+              {fieldErrors.description && (
+                <p className="text-[11px] text-rose-500 mt-1">{fieldErrors.description}</p>
+              )}
             </div>
 
             <div className="pt-2 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setActiveTab("my")}
+                onClick={() => {
+                  setActiveTab("my");
+                  setFieldErrors({});
+                  setFormError("");
+                }}
                 className="px-4 py-2.5 rounded-xl text-xs font-semibold text-mute hover:text-ink bg-soft border border-line transition-colors"
               >
                 Cancel

@@ -5,6 +5,8 @@ import com.kampusx.issue.entity.IssueStatus;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 public class IssueResponse {
@@ -12,6 +14,8 @@ public class IssueResponse {
     private Long id;
     private String title;
     private String description;
+    private String floorRoom;
+    private LocalDateTime createdAt;
 
     private IssueStatus status;
     private IssuePriority priority;

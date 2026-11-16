@@ -14,6 +14,7 @@ import com.kampusx.user.entity.Role;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
 import com.kampusx.issue.repository.IssueVoteRepository;
+import com.kampusx.issue.repository.IssueCommentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +23,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 import com.kampusx.notification.service.AppNotificationService;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
@@ -38,6 +40,7 @@ public class IssueService {
     private final CategoryRepository categoryRepository;
     private final LocationRepository locationRepository;
     private final IssueVoteRepository issueVoteRepository;
+    private final IssueCommentRepository issueCommentRepository;
     private final AppNotificationService notificationService;
 
     public IssueResponse createIssue(CreateIssueRequest request) {
@@ -62,6 +65,10 @@ public class IssueService {
                 .orElseThrow(() -> new ResourceNotFoundException("Location not found"));
 
         issue.setLocation(location);
+        issue.setFloorRoom(request.getFloorRoom());
+        if (issue.getCreatedAt() == null) {
+            issue.setCreatedAt(LocalDateTime.now());
+        }
         issue.setReporter(reporter);
 
         Issue savedIssue = issueRepository.save(issue);
@@ -84,43 +91,105 @@ public class IssueService {
         issue.setDescription(request.getDescription());
         issue.setCategory(category);
         issue.setLocation(location);
+        if (request.getFloorRoom() != null) {
+            issue.setFloorRoom(request.getFloorRoom());
+        }
 
         Issue updatedIssue = issueRepository.save(issue);
 
         return toResponse(updatedIssue);
     }
 
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return null;
+        }
+        return userRepository.findByEmail(auth.getName())
+                .map(User::getId)
+                .orElse(null);
+    }
+
+    private List<IssueResponse> toResponseList(List<Issue> issues) {
+        if (issues == null || issues.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> issueIds = issues.stream().map(Issue::getId).toList();
+        Long currentUserId = getCurrentUserId();
+
+        Map<Long, Long> voteCounts = new HashMap<>();
+        for (Object[] row : issueVoteRepository.countVotesByIssueIds(issueIds)) {
+            voteCounts.put((Long) row[0], (Long) row[1]);
+        }
+
+        Map<Long, Long> commentCounts = new HashMap<>();
+        for (Object[] row : issueCommentRepository.countCommentsByIssueIds(issueIds)) {
+            commentCounts.put((Long) row[0], (Long) row[1]);
+        }
+
+        Set<Long> userVotedIssueIds = currentUserId != null
+                ? new HashSet<>(issueVoteRepository.findVotedIssueIdsByUserId(issueIds, currentUserId))
+                : Collections.emptySet();
+
+        return issues.stream()
+                .map(issue -> toResponse(
+                        issue,
+                        voteCounts.getOrDefault(issue.getId(), 0L),
+                        commentCounts.getOrDefault(issue.getId(), 0L),
+                        userVotedIssueIds.contains(issue.getId())
+                ))
+                .toList();
+    }
+
     private IssueResponse toResponse(Issue issue) {
+        if (issue == null) return null;
+        Long currentUserId = getCurrentUserId();
+        long votes = issueVoteRepository.countByIssueId(issue.getId());
+        long comments = issueCommentRepository.countByIssueId(issue.getId());
+        boolean hasVoted = currentUserId != null && issueVoteRepository.existsByIssueIdAndUserId(issue.getId(), currentUserId);
+        return toResponse(issue, votes, comments, hasVoted);
+    }
+
+    private IssueResponse toResponse(Issue issue, long voteCount, long commentCount, boolean hasVoted) {
 
         IssueResponse response = new IssueResponse();
 
         response.setId(issue.getId());
         response.setTitle(issue.getTitle());
         response.setDescription(issue.getDescription());
-        response.setCategoryId(issue.getCategory().getId());
-        response.setCategoryName(issue.getCategory().getName());
-        response.setLocationId(issue.getLocation().getId());
-        response.setLocationName(issue.getLocation().getName());
+        response.setFloorRoom(issue.getFloorRoom());
+        response.setCreatedAt(issue.getCreatedAt());
+
+        if (issue.getCategory() != null) {
+            response.setCategoryId(issue.getCategory().getId());
+            response.setCategoryName(issue.getCategory().getName());
+        }
+
+        if (issue.getLocation() != null) {
+            response.setLocationId(issue.getLocation().getId());
+            response.setLocationName(issue.getLocation().getName());
+        }
+
         response.setPriority(issue.getPriority());
         response.setStatus(issue.getStatus());
-        long affectedUsers =
-                issueVoteRepository.countByIssueId(issue.getId());
 
-        response.setAffectedUsers(
-                (int) issueVoteRepository.countByIssueId(issue.getId())
-        );
-        response.setReporterId(issue.getReporter().getId());
-        response.setReporterName(issue.getReporter().getName());
+        response.setAffectedUsers((int) voteCount);
+        response.setVoteCount(voteCount);
+        response.setCommentCount(commentCount);
+        response.setHasVoted(hasVoted);
+
+        if (issue.getReporter() != null) {
+            response.setReporterId(issue.getReporter().getId());
+            response.setReporterName(issue.getReporter().getName());
+        }
 
         return response;
     }
 
     @Transactional(readOnly = true)
     public List<IssueResponse> getAllIssues() {
-        return issueRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return toResponseList(issueRepository.findAll());
     }
 
     public List<IssueResponse> getMyIssues(String email) {
@@ -128,18 +197,12 @@ public class IssueService {
         User student = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
-        return issueRepository.findByReporterId(student.getId())
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return toResponseList(issueRepository.findByReporterId(student.getId()));
     }
 
     public List<IssueResponse> getIssuesForCategoryHead(Long categoryHeadId) {
 
-        return issueRepository.findByCategoryCategoryHeadId(categoryHeadId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return toResponseList(issueRepository.findByCategoryCategoryHeadId(categoryHeadId));
     }
 
     public IssueResponse getIssueById(Long id) {
@@ -366,12 +429,8 @@ public class IssueService {
         User resolver = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Resolver not found"));
 
-        return issueRepository.findByResolverId(resolver.getId())
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return toResponseList(issueRepository.findByResolverId(resolver.getId()));
     }
-
 
     public Page<IssueResponse> searchIssues(
             String status,
@@ -381,7 +440,7 @@ public class IssueService {
             String sort,
             Pageable pageable
     ) {
-        return issueRepository.findAll(
+        Page<Issue> page = issueRepository.findAll(
                 IssueSpecification.filter(
                         status,
                         search,
@@ -390,7 +449,9 @@ public class IssueService {
                         sort
                 ),
                 pageable
-        ).map(this::toResponse);
+        );
+        List<IssueResponse> content = toResponseList(page.getContent());
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, page.getTotalElements());
     }
 
 }

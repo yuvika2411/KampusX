@@ -1,16 +1,36 @@
 "use client";
 
 import Link from "next/link";
-
+import { useState, useEffect } from "react";
 import {
   ArrowRight,
   PlusCircle,
   Sparkles,
   CheckCircle,
   LogIn,
+  LayoutDashboard,
 } from "lucide-react";
+import { AuthSession, getSession, fetchCurrentUser } from "@/lib/auth";
+import RoleBadge from "./dashboard/RoleBadge";
 
 export default function CtaSection() {
+  const [session, setSession] = useState<AuthSession | null>(null);
+
+  useEffect(() => {
+    const active = getSession();
+    if (active) {
+      setSession(active);
+      fetchCurrentUser()
+        .then((fresh) => {
+          if (fresh) setSession(fresh);
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const isStudent = session?.role?.toUpperCase() === "STUDENT";
+  const isStaffOrAdmin = !!session && session.role?.toUpperCase() !== "STUDENT";
+
   return (
     <section className="py-20 md:py-28 bg-page relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,31 +56,99 @@ export default function CtaSection() {
               improving facility maintenance together.
             </p>
 
-            {/* Buttons */}
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/login?next=/issues/new"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold bg-white text-indigo-950 hover:bg-indigo-50 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
-              >
-                <PlusCircle className="w-5 h-5 text-indigo-600" />
-                <span>Report an Issue Today</span>
-                <ArrowRight className="w-4 h-4 text-indigo-600" />
-              </Link>
+            {/* Role indicator if logged in */}
+            {session && (
+              <div className="mt-6 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                <span className="text-xs text-indigo-200 font-medium">Logged in as:</span>
+                <RoleBadge role={session.role} size="sm" />
+              </div>
+            )}
 
-              <Link
-                href="/login"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl text-base font-bold text-white bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm transition-all duration-150"
-              >
-                <LogIn className="w-4 h-4 text-indigo-300" />
-                <span>Login with Institutional Email</span>
-              </Link>
+            {/* Buttons */}
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              {session ? (
+                isStudent ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold bg-white text-indigo-950 hover:bg-indigo-50 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+                    >
+                      <PlusCircle className="w-5 h-5 text-indigo-600" />
+                      <span>Report an Issue Today</span>
+                      <ArrowRight className="w-4 h-4 text-indigo-600" />
+                    </Link>
+
+                    <Link
+                      href="/dashboard"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl text-base font-bold text-white bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm transition-all duration-150"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-indigo-300" />
+                      <span>Go to Dashboard</span>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold bg-white text-indigo-950 hover:bg-indigo-50 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+                    >
+                      <LayoutDashboard className="w-5 h-5 text-indigo-600" />
+                      <span>Go to Resolution Dashboard</span>
+                      <ArrowRight className="w-4 h-4 text-indigo-600" />
+                    </Link>
+
+                    <Link
+                      href="#live-feed"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl text-base font-bold text-white bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm transition-all duration-150"
+                    >
+                      <span>Explore Workflow Example</span>
+                    </Link>
+                  </>
+                )
+              ) : (
+                <>
+                  <Link
+                    href="/login?next=/dashboard"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold bg-white text-indigo-950 hover:bg-indigo-50 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    <PlusCircle className="w-5 h-5 text-indigo-600" />
+                    <span>Report an Issue Today</span>
+                    <ArrowRight className="w-4 h-4 text-indigo-600" />
+                  </Link>
+
+                  <Link
+                    href="/login"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl text-base font-bold text-white bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm transition-all duration-150"
+                  >
+                    <LogIn className="w-4 h-4 text-indigo-300" />
+                    <span>Login with Institutional Email</span>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Note for staff & email auth */}
+            <div className="mt-4 flex flex-col items-center gap-1 text-center">
+              <p className="text-xs text-indigo-200 font-medium">
+                Sign in with your @kiet.edu email, no password needed
+              </p>
+              {!session && (
+                <p className="text-[11px] text-indigo-300/80">
+                  Campus staff and resolvers can log in directly with their institutional credentials.
+                </p>
+              )}
+              {isStaffOrAdmin && (
+                <p className="text-[11px] text-indigo-300 font-medium">
+                  Issue creation is restricted to student accounts. You have management and resolution permissions.
+                </p>
+              )}
             </div>
 
             {/* Feature reassurance pills */}
             <div className="mt-10 pt-8 border-t border-white/10 flex flex-wrap items-center justify-center gap-y-2 gap-x-6 text-xs text-indigo-200 font-medium">
               <div className="flex items-center gap-1.5">
                 <CheckCircle className="w-4 h-4 text-emerald-400" />
-                <span>Institutional email & password authentication</span>
+                <span>Secure @kiet.edu email OTP authentication</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle className="w-4 h-4 text-emerald-400" />

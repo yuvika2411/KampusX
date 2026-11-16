@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShieldAlert,
@@ -7,9 +8,19 @@ import {
   Mail,
   Heart,
   ExternalLink,
+  ShieldCheck,
+  Phone,
 } from "lucide-react";
+import { AuthSession, getSession } from "@/lib/auth";
 
 export default function Footer() {
+  const [session, setSession] = useState<AuthSession | null>(null);
+
+  useEffect(() => {
+    const active = getSession();
+    if (active) setSession(active);
+  }, []);
+
   return (
     <footer className="bg-card text-mute border-t border-line">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
@@ -31,9 +42,9 @@ export default function Footer() {
             </div>
 
             <p className="text-sm text-mute leading-relaxed max-w-sm">
-              A student-developed campus issue reporting and resolution platform for
-              the KIET campus community. Designed for transparency, speed, and collaborative
-              facility improvements.
+              An institutional campus issue reporting and resolution platform for
+              the KIET community. Designed for accountability, speed, and collaborative
+              campus maintenance improvements.
             </p>
 
             <div className="pt-2 space-y-2 text-xs text-mute">
@@ -45,7 +56,16 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-indigo-500 shrink-0" />
-                <span>support@kampusx.kiet.edu</span>
+                <a
+                  href="mailto:support@kampusx.kiet.edu"
+                  className="hover:text-ink transition-colors"
+                >
+                  support@kampusx.kiet.edu
+                </a>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-indigo-500 shrink-0" />
+                <span>Campus Intercom: Ext. 4100 / Estate Office</span>
               </div>
             </div>
           </div>
@@ -58,10 +78,12 @@ export default function Footer() {
             <ul className="mt-4 space-y-2.5 text-xs sm:text-sm">
               <li>
                 <Link
-                  href="/login?next=/issues/new"
+                  href={session ? "/dashboard" : "/login?next=/dashboard"}
                   className="hover:text-ink transition-colors flex items-center gap-1.5"
                 >
-                  Report an Issue
+                  {session && session.role?.toUpperCase() !== "STUDENT"
+                    ? "Resolution Dashboard"
+                    : "Report an Issue"}
                 </Link>
               </li>
               <li>
@@ -69,7 +91,7 @@ export default function Footer() {
                   href="#live-feed"
                   className="hover:text-ink transition-colors"
                 >
-                  Demo Campus Feed
+                  Campus Workflow
                 </Link>
               </li>
               <li>
@@ -81,8 +103,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="#stats" className="hover:text-ink transition-colors">
-                  Resolution Targets (Demo)
+                <Link href="#roles" className="hover:text-ink transition-colors">
+                  Who Uses KampusX
                 </Link>
               </li>
               <li>
@@ -101,12 +123,12 @@ export default function Footer() {
             <ul className="mt-4 space-y-2.5 text-xs sm:text-sm">
               <li>
                 <span className="hover:text-ink transition-colors cursor-pointer">
-                  Aryabhatta & Gargi Hostels
+                  Hostels (Aryabhatt & Gargi)
                 </span>
               </li>
               <li>
                 <span className="hover:text-ink transition-colors cursor-pointer">
-                  Academic Blocks (A, B, C)
+                  Academic Blocks (A through H)
                 </span>
               </li>
               <li>
@@ -116,7 +138,7 @@ export default function Footer() {
               </li>
               <li>
                 <span className="hover:text-ink transition-colors cursor-pointer">
-                  Computer Labs & Wi-Fi Zones
+                  AI Labs & Computer Centers
                 </span>
               </li>
               <li>
@@ -168,20 +190,35 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Institutional Privacy & Security Notice Banner */}
+        <div className="mt-12 p-4 rounded-xl bg-soft/70 border border-line text-xs text-mute flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="p-2 rounded-lg bg-card border border-line text-indigo-500 shrink-0">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-ink">Institutional Privacy & Security Notice</p>
+            <p className="text-[11px] text-mute mt-0.5">
+              All accounts are verified via official KIET institutional email (@kiet.edu). Reporter personal details
+              remain strictly confidential and are not exposed in public previews or community aggregate views.
+              Ticket data is processed solely for campus facility administration and department workflow tracking.
+            </p>
+          </div>
+        </div>
+
         {/* Bottom Bar */}
-        <div className="mt-14 pt-8 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-mute">
+        <div className="mt-8 pt-8 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-mute">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-soft text-mute border border-line font-medium">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              Demo Mode (Ready for Backend Integration)
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              KIET Student Resolution Platform
             </span>
-            <span>• KIET Campus Initiative</span>
+            <span>• Official Campus Portal</span>
           </div>
 
           <div className="flex items-center gap-1 text-mute">
             <span>Built with</span>
             <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline" />
-            <span>for the KIET Student Community © {new Date().getFullYear()}</span>
+            <span>by the KampusX Student Engineering Team for KIET © {new Date().getFullYear()}</span>
           </div>
         </div>
       </div>
