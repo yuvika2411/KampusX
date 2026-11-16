@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ThumbsUp,
   Clock,
@@ -13,15 +12,18 @@ import {
   Filter,
   ArrowUpRight,
   Check,
+  Info,
 } from "lucide-react";
+import { AuthSession, getSession } from "@/lib/auth";
 
 interface Issue {
   id: string;
   title: string;
-  category: "Hostels" | "Academic Labs" | "Wi-Fi & IT" | "Estate & Maintenance";
+  category: string;
+  categoryLabel: string;
   location: string;
-  status: "In Progress" | "Scheduled" | "Resolved" | "Under Review";
-  priority: "Urgent" | "High" | "Normal";
+  status: "REPORTED" | "ASSIGNED" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "REOPENED";
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   votes: number;
   reportedBy: string;
   timeAgo: string;
@@ -29,57 +31,76 @@ interface Issue {
   hasUpvoted?: boolean;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  HOSTEL: "Hostel",
+  MESS: "Mess",
+  CAMPUS_WIFI: "Campus Wi-Fi",
+  ACADEMIC: "Academic Blocks",
+  LAB: "Academic Labs",
+  CLASSROOM: "Classrooms",
+  WASHROOM: "Washroom",
+  PARKING: "Parking",
+  MEDICAL_ROOM: "Medical Room",
+  LIBRARY: "Central Library",
+  SPORTS: "Sports & Gym",
+  CAFETERIA: "Cafeteria",
+};
+
 const INITIAL_ISSUES: Issue[] = [
   {
-    id: "KX-1048",
-    title: "Central Library (3rd Floor) — Wi-Fi AP Dropping Connections During Peak Hours",
-    category: "Wi-Fi & IT",
-    location: "Library East Wing, 3rd Floor",
-    status: "In Progress",
-    priority: "Urgent",
-    votes: 186,
-    reportedBy: "Aarav S. (CSE-3rd Yr)",
-    timeAgo: "2 hours ago",
-    assignedTo: "Campus IT Network Cell",
+    id: "Example Ticket #1",
+    title: "Central Library (3rd Floor) — Wi-Fi AP Dropping Connections",
+    category: "CAMPUS_WIFI",
+    categoryLabel: "Campus Wi-Fi",
+    location: "Library",
+    status: "IN_PROGRESS",
+    priority: "HIGH",
+    votes: 48,
+    reportedBy: "Student (Example)",
+    timeAgo: "Example: 2h ago",
+    assignedTo: "Campus IT Resolver",
     hasUpvoted: false,
   },
   {
-    id: "KX-1042",
-    title: "Aryabhatta Hostel Block B — 2nd Floor RO Water Purifier Filter Service Needed",
-    category: "Hostels",
-    location: "Aryabhatta Hostel, Block B",
-    status: "Scheduled",
-    priority: "High",
-    votes: 142,
-    reportedBy: "Dev P. (ECE-2nd Yr)",
-    timeAgo: "5 hours ago",
-    assignedTo: "Estate & Sanitation Desk",
+    id: "Example Ticket #2",
+    title: "Aryabhatt Hostel — RO Water Purifier Maintenance",
+    category: "HOSTEL",
+    categoryLabel: "Hostels",
+    location: "Aryabhatt Hostel",
+    status: "ASSIGNED",
+    priority: "HIGH",
+    votes: 35,
+    reportedBy: "Student (Example)",
+    timeAgo: "Example: 5h ago",
+    assignedTo: "Hostel Caretaker Resolver",
     hasUpvoted: false,
   },
   {
-    id: "KX-1037",
-    title: "Academic Block A (Lab 402) — Projector Lamp Replaced & Tested for Seminars",
-    category: "Academic Labs",
-    location: "Block A, Room 402",
-    status: "Resolved",
-    priority: "High",
-    votes: 94,
-    reportedBy: "Neha K. (IT-4th Yr)",
-    timeAgo: "Yesterday",
-    assignedTo: "Audio-Visual Maintenance",
+    id: "Example Ticket #3",
+    title: "HP-Intel AI Skills Lab — Projector Display Calibration",
+    category: "LAB",
+    categoryLabel: "Academic Labs",
+    location: "HP-Intel AI Skills Lab",
+    status: "RESOLVED",
+    priority: "MEDIUM",
+    votes: 24,
+    reportedBy: "Student (Example)",
+    timeAgo: "Example: Yesterday",
+    assignedTo: "Lab Coordinator Resolver",
     hasUpvoted: true,
   },
   {
-    id: "KX-1031",
-    title: "Sports Complex — Basketball Court Floodlights 3 & 4 Power Relay Repair",
-    category: "Estate & Maintenance",
-    location: "Outdoor Sports Arena",
-    status: "Under Review",
-    priority: "Normal",
-    votes: 78,
-    reportedBy: "Rohit M. (ME-3rd Yr)",
-    timeAgo: "1 day ago",
-    assignedTo: "Electrical Works Unit",
+    id: "Example Ticket #4",
+    title: "A Block (Room 201) — Classroom Lighting Relay Check",
+    category: "ACADEMIC",
+    categoryLabel: "Academic Blocks",
+    location: "A Block",
+    status: "REPORTED",
+    priority: "LOW",
+    votes: 16,
+    reportedBy: "Student (Example)",
+    timeAgo: "Example: 1d ago",
+    assignedTo: "Awaiting Resolver Assignment",
     hasUpvoted: false,
   },
 ];
@@ -87,20 +108,41 @@ const INITIAL_ISSUES: Issue[] = [
 export default function DashboardMockup() {
   const [issues, setIssues] = useState<Issue[]>(INITIAL_ISSUES);
   const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [selectedIssueId, setSelectedIssueId] = useState<string>("KX-1048");
+  const [selectedIssueId, setSelectedIssueId] = useState<string>("Example Ticket #1");
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [voteHint, setVoteHint] = useState<string | null>(null);
 
-  const categories = ["All", "Hostels", "Academic Labs", "Wi-Fi & IT", "Estate & Maintenance"];
+  useEffect(() => {
+    const currentSession = getSession();
+    if (currentSession) {
+      setSession(currentSession);
+    }
+  }, []);
+
+  const categories = [
+    { key: "All", label: "All Categories" },
+    { key: "CAMPUS_WIFI", label: "Campus Wi-Fi" },
+    { key: "HOSTEL", label: "Hostels" },
+    { key: "LAB", label: "Academic Labs" },
+    { key: "ACADEMIC", label: "Academic Blocks" },
+  ];
 
   const handleVote = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setIssues((prev) =>
       prev.map((issue) => {
         if (issue.id === id) {
-          const isUpvoted = !!issue.hasUpvoted;
+          if (issue.hasUpvoted) {
+            setVoteHint("You have already upvoted this ticket. Note: Real campus upvoting requires signing in with your KIET account.");
+            setTimeout(() => setVoteHint(null), 4000);
+            return issue;
+          }
+          setVoteHint("Upvote simulated! Real campus upvoting requires signing in with your KIET account.");
+          setTimeout(() => setVoteHint(null), 4000);
           return {
             ...issue,
-            hasUpvoted: !isUpvoted,
-            votes: isUpvoted ? issue.votes - 1 : issue.votes + 1,
+            hasUpvoted: true,
+            votes: issue.votes + 1,
           };
         }
         return issue;
@@ -117,32 +159,46 @@ export default function DashboardMockup() {
 
   const getStatusBadge = (status: Issue["status"]) => {
     switch (status) {
-      case "In Progress":
+      case "REPORTED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-indigo-600 bg-indigo-500/15 border border-indigo-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/30">
+            <AlertCircle className="w-3 h-3 text-amber-500" />
+            Reported
+          </span>
+        );
+      case "ASSIGNED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-blue-500 bg-blue-500/10 border border-blue-500/30">
+            <Clock3 className="w-3 h-3 text-blue-500" />
+            Assigned
+          </span>
+        );
+      case "IN_PROGRESS":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-indigo-500 bg-indigo-500/15 border border-indigo-500/30">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
             In Progress
           </span>
         );
-      case "Scheduled":
+      case "RESOLVED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-indigo-600 bg-indigo-500/15 border border-indigo-500/30">
-            <Clock3 className="w-3 h-3 text-indigo-500" />
-            Scheduled
-          </span>
-        );
-      case "Resolved":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-emerald-600 bg-emerald-500/15 border border-emerald-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/30">
             <CheckCircle2 className="w-3 h-3 text-emerald-500" />
             Resolved
           </span>
         );
-      case "Under Review":
+      case "CLOSED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-amber-600 bg-amber-500/15 border border-amber-500/30">
-            <AlertCircle className="w-3 h-3 text-amber-500" />
-            Under Review
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-mute bg-soft border border-line">
+            <Check className="w-3 h-3" />
+            Closed
+          </span>
+        );
+      case "REOPENED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-rose-500 bg-rose-500/10 border border-rose-500/30">
+            <Clock className="w-3 h-3 text-rose-500" />
+            Reopened
           </span>
         );
     }
@@ -150,22 +206,23 @@ export default function DashboardMockup() {
 
   const getPriorityBadge = (priority: Issue["priority"]) => {
     switch (priority) {
-      case "Urgent":
+      case "CRITICAL":
+      case "HIGH":
         return (
-          <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-500 border border-rose-500/30">
-            Urgent
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-500 border border-rose-500/30">
+            {priority}
           </span>
         );
-      case "High":
+      case "MEDIUM":
         return (
-          <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-orange-500/15 text-orange-500 border border-orange-500/30">
-            High
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-orange-500/15 text-orange-500 border border-orange-500/30">
+            Medium
           </span>
         );
-      case "Normal":
+      case "LOW":
         return (
-          <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-soft text-mute border border-line">
-            Normal
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-soft text-mute border border-line">
+            Low
           </span>
         );
     }
@@ -182,18 +239,14 @@ export default function DashboardMockup() {
             <div className="w-3 h-3 rounded-full bg-emerald-500/90" />
           </div>
           <div className="hidden sm:flex items-center gap-2 ml-4 px-3 py-1 bg-card rounded-lg text-xs font-mono text-mute border border-line">
-            <span className="opacity-60">https://</span>
-            <span>kampusx.kiet.edu/demo-feed</span>
+            <span>Workflow Preview Example</span>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-amber-600 bg-amber-500/15 border border-amber-500/30">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-            Demo Preview (Sample Data)
-          </span>
-          <span className="text-xs text-mute hidden sm:inline">
-            Backend Integration Pending
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border text-indigo-500 bg-indigo-500/10 border-indigo-500/20">
+            <span className="w-2 h-2 rounded-full bg-indigo-500" />
+            Interactive Workflow Example
           </span>
         </div>
       </div>
@@ -202,32 +255,27 @@ export default function DashboardMockup() {
       <div className="p-4 sm:p-6 bg-soft/70 border-b border-line">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-ink">
-                Campus Issue Feed (Demo Preview)
-              </h2>
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-soft text-indigo-500 border border-line">
-                4 Sample Issues (Demo Data)
-              </span>
-            </div>
+            <h2 className="text-lg font-bold text-ink">
+              Campus Issue Feed (Example Workflow)
+            </h2>
             <p className="text-xs text-mute mt-0.5">
-              Sample campus issue stream demonstrating upcoming workflow before backend connection
+              Interactive preview demonstrating student reporting, department routing, and community upvoting.
             </p>
           </div>
 
-          {/* Quick Metrics (Demo Targets) */}
+          {/* Quick Metrics */}
           <div className="flex items-center gap-3 overflow-x-auto pb-1 sm:pb-0">
             <div className="px-3 py-1.5 rounded-xl bg-card border border-line text-center shadow-xs">
-              <span className="text-[10px] uppercase font-bold text-mute block">Avg Response (Target)</span>
-              <span className="text-xs font-bold text-indigo-500">4-12 Hours</span>
+              <span className="text-[10px] uppercase font-bold text-mute block">Workflow Stages</span>
+              <span className="text-xs font-bold text-indigo-500">6 Real Statuses</span>
             </div>
             <div className="px-3 py-1.5 rounded-xl bg-card border border-line text-center shadow-xs">
-              <span className="text-[10px] uppercase font-bold text-mute block">Sample Loaded</span>
-              <span className="text-xs font-bold text-emerald-500">4 Issues</span>
+              <span className="text-[10px] uppercase font-bold text-mute block">Verification</span>
+              <span className="text-xs font-bold text-emerald-500">Student Sign-off</span>
             </div>
             <div className="px-3 py-1.5 rounded-xl bg-card border border-line text-center shadow-xs">
               <span className="text-[10px] uppercase font-bold text-mute block">Campus Desks</span>
-              <span className="text-xs font-bold text-ink">4 Mapped</span>
+              <span className="text-xs font-bold text-ink">12 Real Categories</span>
             </div>
           </div>
         </div>
@@ -236,22 +284,30 @@ export default function DashboardMockup() {
         <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 pt-1 no-scrollbar">
           <span className="text-xs font-semibold text-mute flex items-center gap-1 pl-1 pr-2">
             <Filter className="w-3.5 h-3.5 text-mute" />
-            Filter:
+            Category:
           </span>
           {categories.map((cat) => (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
+              key={cat.key}
+              onClick={() => setActiveCategory(cat.key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
-                activeCategory === cat
+                activeCategory === cat.key
                   ? "bg-brand-gradient text-white shadow-sm shadow-indigo-500/30"
                   : "bg-card text-mute hover:bg-soft hover:text-ink border border-line"
               }`}
             >
-              {cat}
+              {cat.label}
             </button>
           ))}
         </div>
+
+        {/* Hint banner for interactive upvote */}
+        {voteHint && (
+          <div className="mt-3 p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs flex items-center gap-2 animate-in fade-in duration-150">
+            <Info size={14} className="shrink-0 text-indigo-500" />
+            <span>{voteHint}</span>
+          </div>
+        )}
       </div>
 
       {/* Issues Grid / Master-Detail Area */}
@@ -305,7 +361,7 @@ export default function DashboardMockup() {
                         ? "bg-brand-gradient text-white border-transparent shadow-md shadow-indigo-500/25 scale-105"
                         : "bg-soft hover:bg-soft/80 text-ink border-line hover:border-[#818cf8]"
                     }`}
-                    title="Click to support/upvote this issue"
+                    title="Click to try upvoting (Preview only)"
                   >
                     <ThumbsUp
                       className={`w-4 h-4 mb-0.5 transition-transform ${
@@ -320,15 +376,15 @@ export default function DashboardMockup() {
           })}
         </div>
 
-        {/* Right: Live Resolution Timeline & Details for Selected Issue (Sidebar) */}
+        {/* Right: Resolution Timeline & Details for Selected Issue */}
         <div className="lg:col-span-5 p-5 sm:p-6 bg-soft/50 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-line">
               <span className="text-xs font-bold text-mute tracking-wider uppercase">
-                Sample Resolution Workflow
+                Resolution Workflow Lifecycle
               </span>
               <span className="text-xs font-mono font-bold text-indigo-500">
-                Ticket {selectedIssue.id}
+                {selectedIssue.id}
               </span>
             </div>
 
@@ -337,14 +393,14 @@ export default function DashboardMockup() {
                 {selectedIssue.title}
               </h4>
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-xs text-mute">Assigned Department:</span>
+                <span className="text-xs text-mute">Assigned Resolver:</span>
                 <span className="text-xs font-bold text-indigo-500 bg-card px-2 py-0.5 rounded border border-line">
                   {selectedIssue.assignedTo}
                 </span>
               </div>
             </div>
 
-            {/* Stepper Timeline */}
+            {/* Stepper Timeline based on exact backend statuses */}
             <div className="mt-5 space-y-3.5">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0 mt-0.5">
@@ -352,24 +408,10 @@ export default function DashboardMockup() {
                 </div>
                 <div>
                   <div className="text-xs font-bold text-ink">
-                    Issue Submitted & Categorized
+                    1. REPORTED
                   </div>
                   <div className="text-[11px] text-mute">
-                    Logged with photos and location details
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0 mt-0.5">
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-ink">
-                    Community Verification Milestone
-                  </div>
-                  <div className="text-[11px] text-mute">
-                    {selectedIssue.votes}+ student upvotes recorded in preview
+                    Student submits issue with campus location, floor/room, and category
                   </div>
                 </div>
               </div>
@@ -377,23 +419,49 @@ export default function DashboardMockup() {
               <div className="flex items-start gap-3">
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0 mt-0.5 ${
-                    selectedIssue.status === "In Progress" || selectedIssue.status === "Resolved"
-                      ? "bg-brand-gradient"
-                      : "bg-amber-500"
+                    selectedIssue.status !== "REPORTED" ? "bg-emerald-500" : "bg-soft border border-line text-mute"
                   }`}
                 >
-                  {selectedIssue.status === "Resolved" ? (
+                  {selectedIssue.status !== "REPORTED" ? (
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   ) : (
-                    <Clock className="w-3.5 h-3.5 animate-spin" />
+                    <span className="text-[10px] font-bold text-mute">2</span>
                   )}
                 </div>
                 <div>
                   <div className="text-xs font-bold text-ink">
-                    Work Order Dispatched to Field Crew
+                    2. ASSIGNED
                   </div>
                   <div className="text-[11px] text-mute">
-                    Assigned to {selectedIssue.assignedTo}
+                    Category Head reviews queue and assigns designated resolver
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0 mt-0.5 ${
+                    selectedIssue.status === "IN_PROGRESS"
+                      ? "bg-brand-gradient"
+                      : selectedIssue.status === "RESOLVED" || selectedIssue.status === "CLOSED"
+                      ? "bg-emerald-500"
+                      : "bg-soft border border-line text-mute"
+                  }`}
+                >
+                  {selectedIssue.status === "RESOLVED" || selectedIssue.status === "CLOSED" ? (
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  ) : selectedIssue.status === "IN_PROGRESS" ? (
+                    <Clock className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-mute">3</span>
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-ink">
+                    3. IN_PROGRESS
+                  </div>
+                  <div className="text-[11px] text-mute">
+                    Assigned resolver begins active maintenance repair on-site
                   </div>
                 </div>
               </div>
@@ -401,25 +469,23 @@ export default function DashboardMockup() {
               <div className="flex items-start gap-3">
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
-                    selectedIssue.status === "Resolved"
+                    selectedIssue.status === "RESOLVED" || selectedIssue.status === "CLOSED"
                       ? "bg-emerald-500 text-white"
-                      : "bg-line text-mute"
+                      : "bg-soft border border-line text-mute"
                   }`}
                 >
-                  {selectedIssue.status === "Resolved" ? (
+                  {selectedIssue.status === "RESOLVED" || selectedIssue.status === "CLOSED" ? (
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   ) : (
-                    "4"
+                    <span>4</span>
                   )}
                 </div>
                 <div>
                   <div className="text-xs font-bold text-ink">
-                    Fix Verification & Student Sign-off
+                    4. RESOLVED & CONFIRMATION
                   </div>
                   <div className="text-[11px] text-mute">
-                    {selectedIssue.status === "Resolved"
-                      ? "Confirmed resolved with photo proof"
-                      : "Awaiting technician completion log"}
+                    Resolver marks resolved; original student confirms closure or reopens
                   </div>
                 </div>
               </div>
@@ -427,18 +493,38 @@ export default function DashboardMockup() {
           </div>
 
           {/* Quick Action in Card */}
-          <div className="mt-6 pt-4 border-t border-line flex items-center justify-between">
+          <div className="mt-6 pt-4 border-t border-line flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <span className="text-xs text-mute">
-              Interactive Preview:{" "}
-              <strong className="text-indigo-500 font-semibold">Try Upvoting!</strong>
+              Interactive Example:{" "}
+              <strong className="text-indigo-500 font-semibold">Try Upvoting above!</strong>
             </span>
-            <Link
-              href="/login?next=/issues/new"
-              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-500 hover:text-indigo-400"
-            >
-              Report a Similar Issue
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </Link>
+            {session ? (
+              session.role?.toUpperCase() === "STUDENT" ? (
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-indigo-500 hover:text-indigo-400"
+                >
+                  Report a Campus Issue
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+              ) : (
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-indigo-500 hover:text-indigo-400"
+                >
+                  Go to Resolution Dashboard
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+              )
+            ) : (
+              <Link
+                href="/login?next=/dashboard"
+                className="inline-flex items-center gap-1 text-xs font-bold text-indigo-500 hover:text-indigo-400"
+              >
+                Sign in to Report an Issue
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 
 import ThemeToggle from "./ThemeToggle";
-import { AuthSession, getSession } from "@/lib/auth";
+import { AuthSession, getSession, fetchCurrentUser } from "@/lib/auth";
+import RoleBadge from "./dashboard/RoleBadge";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -28,7 +29,12 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     const active = getSession();
     if (active) {
-      Promise.resolve().then(() => setSession(active));
+      setSession(active);
+      fetchCurrentUser()
+        .then((fresh) => {
+          if (fresh) setSession(fresh);
+        })
+        .catch(() => {});
     }
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -36,8 +42,8 @@ export default function Navbar() {
   const navLinks = [
     { label: "Features", href: "#features" },
     { label: "How It Works", href: "#how-it-works" },
-    { label: "Live Dashboard", href: "#live-feed" },
-    { label: "Campus Impact", href: "#stats" },
+    { label: "Workflow Preview", href: "#live-feed" },
+    { label: "Who Uses KampusX", href: "#roles" },
     { label: "FAQs", href: "#faq" },
   ];
 
@@ -89,13 +95,16 @@ export default function Navbar() {
           <div className="hidden xl:flex items-center gap-3">
             <ThemeToggle />
             {session ? (
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-gradient hover:opacity-95 shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/35 hover:-translate-y-0.5 transition-all duration-200"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Go to Dashboard</span>
-              </Link>
+              <div className="flex items-center gap-2.5">
+                {session.role && <RoleBadge role={session.role} size="sm" />}
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-brand-gradient hover:opacity-95 shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/35 hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Go to Dashboard</span>
+                </Link>
+              </div>
             ) : (
               <>
                 <Link
@@ -120,13 +129,20 @@ export default function Navbar() {
           <div className="flex xl:hidden items-center gap-2">
             <ThemeToggle />
             {session ? (
-              <Link
-                href="/dashboard"
-                className="hidden min-[400px]:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-gradient"
-              >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>Dashboard</span>
-              </Link>
+              <div className="flex items-center gap-1.5">
+                {session.role && (
+                  <span className="hidden min-[480px]:inline-flex">
+                    <RoleBadge role={session.role} size="sm" />
+                  </span>
+                )}
+                <Link
+                  href="/dashboard"
+                  className="hidden min-[400px]:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-gradient"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Dashboard</span>
+                </Link>
+              </div>
             ) : (
               <Link
                 href="/register"
@@ -176,14 +192,21 @@ export default function Navbar() {
 
           <div className="pt-3 border-t border-line flex flex-col gap-2.5">
             {session ? (
-              <Link
-                href="/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-gradient shadow-md shadow-indigo-500/20"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Go to Dashboard</span>
-              </Link>
+              <div className="flex flex-col gap-2 w-full">
+                {session.role && (
+                  <div className="flex items-center justify-center py-1">
+                    <RoleBadge role={session.role} size="sm" />
+                  </div>
+                )}
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-gradient shadow-md shadow-indigo-500/20"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Go to Dashboard</span>
+                </Link>
+              </div>
             ) : (
               <>
                 <Link

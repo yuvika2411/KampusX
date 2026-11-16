@@ -51,6 +51,8 @@ export default function AdminView({ user }: AdminViewProps) {
   // Category Head Assign Modal
   const [assigningCat, setAssigningCat] = useState<CategoryResponse | null>(null);
   const [selectedHeadUserId, setSelectedHeadUserId] = useState<number | "">("");
+  const [assignModalError, setAssignModalError] = useState<string | null>(null);
+  const [assigningLoading, setAssigningLoading] = useState<boolean>(false);
 
   // Role Change Modal
   const [editingUser, setEditingUser] = useState<AdminUserResponse | null>(null);
@@ -170,6 +172,8 @@ export default function AdminView({ user }: AdminViewProps) {
   // Assign Category Head
   const handleAssignHead = async () => {
     if (!assigningCat || !selectedHeadUserId) return;
+    setAssignModalError(null);
+    setAssigningLoading(true);
     try {
       await api.categories.assignHead(assigningCat.id, Number(selectedHeadUserId));
       setActionMessage({
@@ -181,10 +185,14 @@ export default function AdminView({ user }: AdminViewProps) {
       const updatedCats = await api.categories.getAll();
       setCategories(updatedCats);
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Failed to assign category head";
+      setAssignModalError(errMsg);
       setActionMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to assign category head",
+        text: errMsg,
       });
+    } finally {
+      setAssigningLoading(false);
     }
   };
 
@@ -631,6 +639,7 @@ export default function AdminView({ user }: AdminViewProps) {
                     onClick={() => {
                       setAssigningCat(cat);
                       setSelectedHeadUserId(cat.categoryHeadId || "");
+                      setAssignModalError(null);
                     }}
                     className="w-full py-1.5 rounded-xl text-xs font-semibold text-indigo-500 hover:bg-indigo-500/10 border border-indigo-500/20 transition-colors"
                   >
@@ -793,19 +802,32 @@ export default function AdminView({ user }: AdminViewProps) {
               <strong className="text-ink">{assigningCat.name}</strong>.
             </p>
 
+            {assignModalError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-start gap-2">
+                <AlertCircle size={15} className="shrink-0 mt-0.5 text-rose-500" />
+                <span>{assignModalError}</span>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-ink">Select Faculty / Staff User</label>
               <select
                 value={selectedHeadUserId}
-                onChange={(e) => setSelectedHeadUserId(Number(e.target.value) || "")}
+                onChange={(e) => {
+                  setSelectedHeadUserId(Number(e.target.value) || "");
+                  setAssignModalError(null);
+                }}
                 className="w-full px-3 py-2 rounded-xl bg-soft border border-line text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-[#818cf8]"
               >
                 <option value="">-- Choose User --</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    #{u.id} - {u.name} ({u.role}) - {u.email}
-                  </option>
-                ))}
+                {users.map((u) => {
+                  const isHead = u.role === "CATEGORY_HEAD";
+                  return (
+                    <option key={u.id} value={u.id}>
+                      #{u.id} - {u.name} {isHead ? "[CATEGORY_HEAD]" : `(${u.role})`} - {u.email}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -815,6 +837,7 @@ export default function AdminView({ user }: AdminViewProps) {
                 onClick={() => {
                   setAssigningCat(null);
                   setSelectedHeadUserId("");
+                  setAssignModalError(null);
                 }}
                 className="px-4 py-2 rounded-xl text-xs font-semibold text-mute hover:text-ink hover:bg-soft transition-colors"
               >
@@ -823,10 +846,11 @@ export default function AdminView({ user }: AdminViewProps) {
               <button
                 type="button"
                 onClick={handleAssignHead}
-                disabled={!selectedHeadUserId}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-brand-gradient hover:opacity-95 shadow-sm transition-opacity disabled:opacity-50"
+                disabled={!selectedHeadUserId || assigningLoading}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-brand-gradient hover:opacity-95 shadow-sm transition-opacity disabled:opacity-50 flex items-center gap-1.5"
               >
-                Confirm Assignment
+                {assigningLoading && <RefreshCw size={12} className="animate-spin" />}
+                <span>{assigningLoading ? "Assigning..." : "Confirm Assignment"}</span>
               </button>
             </div>
           </div>

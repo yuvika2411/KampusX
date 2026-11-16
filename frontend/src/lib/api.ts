@@ -7,6 +7,8 @@ export interface IssueResponse {
   id: number;
   title: string;
   description: string;
+  floorRoom?: string;
+  createdAt?: string;
   status: IssueStatus;
   priority: IssuePriority;
   affectedUsers?: number;
@@ -25,7 +27,14 @@ export interface CreateIssuePayload {
   title: string;
   description: string;
   categoryId: number;
-  locationId?: number;
+  locationId: number;
+  floorRoom: string;
+}
+
+export interface LocationResponse {
+  id: number;
+  name: string;
+  locationType?: string;
 }
 
 export interface CategoryResponse {
@@ -66,6 +75,23 @@ export interface NotificationResponse {
   issueId?: number;
   read: boolean;
   createdAt: string;
+}
+
+export interface PublicStatsResponse {
+  totalIssues: number;
+  reported: number;
+  inProgress: number;
+  resolved: number;
+}
+
+export interface PublicIssueSummary {
+  id: number;
+  title: string;
+  status: IssueStatus;
+  priority: IssuePriority;
+  categoryName?: string;
+  locationName?: string;
+  voteCount: number;
 }
 
 export interface PageResponse<T> {
@@ -198,5 +224,10 @@ export const api = {
         method: "PATCH",
         headers: authHeaders(),
       }),
+  },
+
+  locations: {
+    getAll: (): Promise<LocationResponse[]> =>
+      request<LocationResponse[]>("/api/locations", { headers: authHeaders() }),
   },
 };
