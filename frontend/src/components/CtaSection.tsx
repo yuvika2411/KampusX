@@ -14,18 +14,16 @@ import { AuthSession, getSession, fetchCurrentUser } from "@/lib/auth";
 import RoleBadge from "./dashboard/RoleBadge";
 
 export default function CtaSection() {
-  const [session, setSession] = useState<AuthSession | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(() =>
+    typeof window !== "undefined" ? getSession() : null
+  );
 
   useEffect(() => {
-    const active = getSession();
-    if (active) {
-      setSession(active);
-      fetchCurrentUser()
-        .then((fresh) => {
-          if (fresh) setSession(fresh);
-        })
-        .catch(() => {});
-    }
+    fetchCurrentUser()
+      .then((fresh) => {
+        if (fresh) setSession(fresh);
+      })
+      .catch(() => {});
   }, []);
 
   const isStudent = session?.role?.toUpperCase() === "STUDENT";

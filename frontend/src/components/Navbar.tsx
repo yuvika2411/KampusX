@@ -20,22 +20,20 @@ import RoleBadge from "./dashboard/RoleBadge";
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [session, setSession] = useState<AuthSession | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(() =>
+    typeof window !== "undefined" ? getSession() : null
+  );
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
-    const active = getSession();
-    if (active) {
-      setSession(active);
-      fetchCurrentUser()
-        .then((fresh) => {
-          if (fresh) setSession(fresh);
-        })
-        .catch(() => {});
-    }
+    fetchCurrentUser()
+      .then((fresh) => {
+        if (fresh) setSession(fresh);
+      })
+      .catch(() => {});
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 

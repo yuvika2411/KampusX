@@ -19,6 +19,7 @@ interface DashboardHeaderProps {
   onSignOut: () => void;
   unreadCount: number;
   onOpenNotifications: () => void;
+  onOpenFeed?: () => void;
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
 }
@@ -28,6 +29,7 @@ export default function DashboardHeader({
   onSignOut,
   unreadCount,
   onOpenNotifications,
+  onOpenFeed,
   mobileMenuOpen,
   setMobileMenuOpen,
 }: DashboardHeaderProps) {
@@ -75,15 +77,27 @@ export default function DashboardHeader({
 
         {/* Right Action Bar */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Link back to public landing page */}
-          <Link
-            href="/"
-            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-mute hover:text-ink bg-soft/60 hover:bg-soft border border-line rounded-xl transition-colors"
-            title="View public landing page"
-          >
-            <Globe size={13} />
-            <span>Campus Feed</span>
-          </Link>
+          {/* Header Campus Feed Link / Tab Trigger */}
+          {user.role?.toUpperCase() === "STUDENT" && onOpenFeed ? (
+            <button
+              type="button"
+              onClick={onOpenFeed}
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-mute hover:text-ink bg-soft/60 hover:bg-soft border border-line rounded-xl transition-colors cursor-pointer"
+              title="Open Campus Feed"
+            >
+              <Globe size={13} />
+              <span>Campus Feed</span>
+            </button>
+          ) : (
+            <Link
+              href="/"
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-mute hover:text-ink bg-soft/60 hover:bg-soft border border-line rounded-xl transition-colors"
+              title="View public landing page"
+            >
+              <Globe size={13} />
+              <span>Campus Feed</span>
+            </Link>
+          )}
 
           {/* Notifications Button */}
           <button
