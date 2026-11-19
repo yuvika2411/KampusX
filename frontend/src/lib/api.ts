@@ -45,6 +45,12 @@ export interface CategoryResponse {
   categoryHeadEmail?: string;
 }
 
+export interface ResolverResponse {
+  id: number;
+  name: string;
+  email: string;
+}
+
 export interface AdminAnalyticsResponse {
   totalIssues: number;
   reported: number;
@@ -286,5 +292,10 @@ export const api = {
   locations: {
     getAll: (): Promise<LocationResponse[]> =>
       request<LocationResponse[]>("/api/locations", { headers: authHeaders() }),
+  },
+
+  users: {
+    getResolvers: (): Promise<ResolverResponse[]> =>
+      request<ResolverResponse[]>("/api/users/resolvers", { headers: authHeaders() }),
   },
 };
