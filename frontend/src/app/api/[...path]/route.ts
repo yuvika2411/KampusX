@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// API proxy configuration and request handling for backend services.
 const BACKEND_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://kampusx-backend.onrender.com").replace(/\/$/, "");
 
 async function handleProxy(req: NextRequest) {
