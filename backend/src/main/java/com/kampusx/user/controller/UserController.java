@@ -1,14 +1,18 @@
 package com.kampusx.user.controller;
 
 import com.kampusx.common.ResourceNotFoundException;
-
+import com.kampusx.user.dto.ResolverResponse;
 import com.kampusx.user.dto.UserResponse;
+import com.kampusx.user.entity.Role;
 import com.kampusx.user.entity.User;
 import com.kampusx.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -32,5 +36,16 @@ public class UserController {
         response.setRole(user.getRole());
 
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'CATEGORY_HEAD')")
+    @GetMapping("/resolvers")
+    public ResponseEntity<List<ResolverResponse>> getActiveResolvers() {
+        List<ResolverResponse> resolvers = userRepository.findByRoleAndActiveTrue(Role.RESOLVER)
+                .stream()
+                .map(u -> new ResolverResponse(u.getId(), u.getName(), u.getEmail()))
+                .toList();
+
+        return ResponseEntity.ok(resolvers);
     }
 }
