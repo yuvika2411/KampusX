@@ -41,6 +41,12 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   let body: unknown;
   try { body = text ? JSON.parse(text) : undefined; } catch { body = text; }
   if (!response.ok) {
+    if (response.status === 401) {
+      clearSession();
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        window.location.assign(window.location.origin + "/login?next=/dashboard");
+      }
+    }
     const message = typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
       ? body.error
       : typeof body === "object" && body !== null && "message" in body && typeof body.message === "string"

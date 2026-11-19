@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   ShieldAlert,
@@ -14,12 +14,9 @@ import {
 import { AuthSession, getSession } from "@/lib/auth";
 
 export default function Footer() {
-  const [session, setSession] = useState<AuthSession | null>(null);
-
-  useEffect(() => {
-    const active = getSession();
-    if (active) setSession(active);
-  }, []);
+  const [session] = useState<AuthSession | null>(() =>
+    typeof window !== "undefined" ? getSession() : null
+  );
 
   return (
     <footer className="bg-card text-mute border-t border-line">

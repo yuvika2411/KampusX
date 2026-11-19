@@ -102,6 +102,19 @@ export interface PageResponse<T> {
   size: number;
 }
 
+export interface IssueCommentResponse {
+  id: number;
+  comment: string;
+  userId?: number;
+  userName?: string;
+}
+
+export interface IssueImageResponse {
+  id: number;
+  issueId: number;
+  imageUrl: string;
+}
+
 export const api = {
   issues: {
     getMyIssues: (): Promise<IssueResponse[]> =>
@@ -154,6 +167,50 @@ export const api = {
     vote: (issueId: number): Promise<string> =>
       request<string>(`/api/issues/${issueId}/vote`, {
         method: "POST",
+        headers: authHeaders(),
+      }),
+
+    getFeed: (): Promise<IssueResponse[]> =>
+      request<IssueResponse[]>("/api/issues/feed", { headers: authHeaders() }),
+
+    searchIssues: (params: {
+      status?: string;
+      search?: string;
+      categoryId?: number;
+      locationId?: number;
+      page?: number;
+      size?: number;
+      sort?: string;
+    } = {}): Promise<PageResponse<IssueResponse>> => {
+      const q = new URLSearchParams();
+      if (params.status && params.status !== "All") q.set("status", params.status);
+      if (params.search && params.search.trim()) q.set("search", params.search.trim());
+      if (params.categoryId) q.set("categoryId", String(params.categoryId));
+      if (params.locationId) q.set("locationId", String(params.locationId));
+      if (params.page !== undefined) q.set("page", String(params.page));
+      if (params.size !== undefined) q.set("size", String(params.size));
+      if (params.sort) q.set("sort", params.sort);
+      const queryStr = q.toString();
+      return request<PageResponse<IssueResponse>>(
+        `/api/issues/search${queryStr ? `?${queryStr}` : ""}`,
+        { headers: authHeaders() }
+      );
+    },
+
+    getComments: (issueId: number): Promise<IssueCommentResponse[]> =>
+      request<IssueCommentResponse[]>(`/api/issues/${issueId}/comments`, {
+        headers: authHeaders(),
+      }),
+
+    addComment: (issueId: number, comment: string): Promise<IssueCommentResponse> =>
+      request<IssueCommentResponse>(`/api/issues/${issueId}/comments`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ comment }),
+      }),
+
+    getImages: (issueId: number): Promise<IssueImageResponse[]> =>
+      request<IssueImageResponse[]>(`/api/issues/${issueId}/images`, {
         headers: authHeaders(),
       }),
 

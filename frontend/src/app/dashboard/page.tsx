@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [studentTab, setStudentTab] = useState<"my" | "feed" | "report">("my");
 
   useEffect(() => {
     let isMounted = true;
@@ -99,6 +100,7 @@ export default function DashboardPage() {
         onSignOut={handleSignOut}
         unreadCount={unreadCount}
         onOpenNotifications={() => setNotificationsOpen(true)}
+        onOpenFeed={() => setStudentTab("feed")}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
       />
@@ -116,14 +118,28 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          <Link
-            href="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-mute hover:text-ink hover:bg-soft rounded-lg"
-          >
-            <Globe size={14} />
-            <span>Public Campus Landing</span>
-          </Link>
+          {role === "STUDENT" ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setStudentTab("feed");
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-mute hover:text-ink hover:bg-soft rounded-lg text-left"
+            >
+              <Globe size={14} />
+              <span>Campus Feed</span>
+            </button>
+          ) : (
+            <Link
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-mute hover:text-ink hover:bg-soft rounded-lg"
+            >
+              <Globe size={14} />
+              <span>Public Campus Landing</span>
+            </Link>
+          )}
 
           <button
             type="button"
@@ -155,7 +171,13 @@ export default function DashboardPage() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Dynamic Role-Based View Switch */}
-        {role === "STUDENT" && <StudentView user={user} />}
+        {role === "STUDENT" && (
+          <StudentView
+            user={user}
+            activeTab={studentTab}
+            onTabChange={setStudentTab}
+          />
+        )}
         {role === "CATEGORY_HEAD" && <CategoryHeadView user={user} />}
         {role === "RESOLVER" && <ResolverView user={user} />}
         {role === "ADMIN" && <AdminView user={user} />}

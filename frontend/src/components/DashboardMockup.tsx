@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ThumbsUp,
   Clock,
@@ -31,20 +31,6 @@ interface Issue {
   hasUpvoted?: boolean;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  HOSTEL: "Hostel",
-  MESS: "Mess",
-  CAMPUS_WIFI: "Campus Wi-Fi",
-  ACADEMIC: "Academic Blocks",
-  LAB: "Academic Labs",
-  CLASSROOM: "Classrooms",
-  WASHROOM: "Washroom",
-  PARKING: "Parking",
-  MEDICAL_ROOM: "Medical Room",
-  LIBRARY: "Central Library",
-  SPORTS: "Sports & Gym",
-  CAFETERIA: "Cafeteria",
-};
 
 const INITIAL_ISSUES: Issue[] = [
   {
@@ -109,15 +95,10 @@ export default function DashboardMockup() {
   const [issues, setIssues] = useState<Issue[]>(INITIAL_ISSUES);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [selectedIssueId, setSelectedIssueId] = useState<string>("Example Ticket #1");
-  const [session, setSession] = useState<AuthSession | null>(null);
+  const [session] = useState<AuthSession | null>(() =>
+    typeof window !== "undefined" ? getSession() : null
+  );
   const [voteHint, setVoteHint] = useState<string | null>(null);
-
-  useEffect(() => {
-    const currentSession = getSession();
-    if (currentSession) {
-      setSession(currentSession);
-    }
-  }, []);
 
   const categories = [
     { key: "All", label: "All Categories" },
