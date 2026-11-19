@@ -453,16 +453,17 @@ export default function StudentView({
     if (!event?.payload) return;
     const issue = event.payload;
     setMyIssues((prev) => {
-      const idx = prev.findIndex((i) => i.id === issue.id);
+      const list = Array.isArray(prev) ? prev : [];
+      const idx = list.findIndex((i) => i.id === issue.id);
       if (idx !== -1) {
-        const copy = [...prev];
+        const copy = [...list];
         copy[idx] = { ...copy[idx], ...issue };
         return copy;
       }
       if (event.type === "ISSUE_CREATED") {
-        return [issue, ...prev];
+        return [issue, ...list];
       }
-      return prev;
+      return list;
     });
 
     setSelectedIssue((prev) =>

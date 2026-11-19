@@ -116,17 +116,18 @@ export default function AdminView({ user }: AdminViewProps) {
   useWebSocketSubscription<IssueResponse>("/topic/admin/issues", (event) => {
     if (!event?.payload) return;
     const issue = event.payload;
-    setAllIssues((prev: IssueResponse[]) => {
-      const idx = prev.findIndex((i) => i.id === issue.id);
+    setAllIssues((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      const idx = list.findIndex((i) => i.id === issue.id);
       if (idx !== -1) {
-        const copy = [...prev];
+        const copy = [...list];
         copy[idx] = { ...copy[idx], ...issue };
         return copy;
       }
       if (event.type === "ISSUE_CREATED") {
-        return [issue, ...prev];
+        return [issue, ...list];
       }
-      return prev;
+      return list;
     });
 
     // Silently refresh analytics counters
