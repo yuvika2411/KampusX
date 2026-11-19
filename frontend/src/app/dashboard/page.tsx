@@ -204,7 +204,10 @@ export default function DashboardPage() {
         isOpen={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}
         onNotificationsChanged={() => {
-          setUnreadCount((prev) => Math.max(0, prev - 1));
+          api.notifications
+            .getUnreadCount()
+            .then((res) => setUnreadCount(res.unreadCount ?? 0))
+            .catch(() => setUnreadCount((prev) => Math.max(0, prev - 1)));
         }}
       />
     </div>
