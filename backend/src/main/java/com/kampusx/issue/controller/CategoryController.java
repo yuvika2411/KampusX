@@ -27,8 +27,24 @@ public class CategoryController {
             @PathVariable Long categoryId,
             @PathVariable Long userId) {
 
+        if (userId <= 0) {
+            return ResponseEntity.ok(
+                    categoryService.removeCategoryHead(categoryId)
+            );
+        }
+
         return ResponseEntity.ok(
                 categoryService.assignCategoryHead(categoryId, userId)
+        );
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{categoryId}/head")
+    public ResponseEntity<CategoryResponse> removeCategoryHead(
+            @PathVariable Long categoryId) {
+
+        return ResponseEntity.ok(
+                categoryService.removeCategoryHead(categoryId)
         );
     }
 }

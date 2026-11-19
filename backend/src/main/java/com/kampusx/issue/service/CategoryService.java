@@ -50,6 +50,19 @@ public class CategoryService {
         return toResponse(savedCategory);
     }
 
+    @Transactional
+    public CategoryResponse removeCategoryHead(Long categoryId) {
+
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        category.setCategoryHead(null);
+
+        Category savedCategory = categoryRepository.save(category);
+
+        return toResponse(savedCategory);
+    }
+
     private CategoryResponse toResponse(Category category) {
 
         CategoryResponse response = new CategoryResponse();
