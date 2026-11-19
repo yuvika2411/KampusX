@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   Layers,
   X,
+  Image as ImageIcon,
 } from "lucide-react";
 import Combobox, { ComboboxOption } from "@/components/ui/Combobox";
 import {
@@ -27,8 +28,11 @@ import {
   IssuePriority,
   CategoryResponse,
   ResolverResponse,
+  IssueImageResponse,
 } from "@/lib/api";
 import { AuthSession } from "@/lib/auth";
+import { wsClient } from "@/lib/websocket";
+import LiveStatusIndicator from "@/components/ui/LiveStatusIndicator";
 
 interface CategoryHeadViewProps {
   user: AuthSession;
@@ -72,6 +76,27 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  // Issue inspect & attachments viewer
+  const [inspectingIssue, setInspectingIssue] = useState<IssueResponse | null>(null);
+  const [inspectImages, setInspectImages] = useState<IssueImageResponse[]>([]);
+  const [inspectImagesLoading, setInspectImagesLoading] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  const openInspectModal = (issue: IssueResponse) => {
+    setInspectingIssue(issue);
+    setInspectImagesLoading(true);
+    api.issues
+      .getImages(issue.id)
+      .then((imgs) => setInspectImages(imgs || []))
+      .catch(() => setInspectImages([]))
+      .finally(() => setInspectImagesLoading(false));
+  };
+
+  const closeInspectModal = () => {
+    setInspectingIssue(null);
+    setInspectImages([]);
+  };
 
   // Handle 401 redirect helper
   const handleAuthRedirect = useCallback((err: unknown) => {
@@ -166,6 +191,35 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
         Number(c.categoryHeadId) === Number(user.id),
     );
   }, [categories, user.id]);
+
+  // Real-time WebSocket subscription for all managed categories
+  useEffect(() => {
+    if (managedCategories.length === 0) return;
+    const unsubs = managedCategories.map((cat) => {
+      return wsClient.subscribe<IssueResponse>(
+        `/topic/categories/${cat.id}/issues`,
+        (event) => {
+          if (!event?.payload) return;
+          const issue = event.payload;
+          setIssues((prev) => {
+            const idx = prev.findIndex((i) => i.id === issue.id);
+            if (idx !== -1) {
+              const copy = [...prev];
+              copy[idx] = { ...copy[idx], ...issue };
+              return copy;
+            }
+            if (event.type === "ISSUE_CREATED") {
+              return [issue, ...prev];
+            }
+            return prev;
+          });
+        },
+      );
+    });
+    return () => {
+      unsubs.forEach((unsub) => unsub());
+    };
+  }, [managedCategories]);
 
   // Options for the resolver Combobox
   const resolverOptions: ComboboxOption[] = useMemo(() => {
@@ -391,14 +445,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
           </p>
         </div>
 
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="px-4 py-2 rounded-xl text-xs font-semibold text-ink bg-soft hover:bg-card border border-line transition-colors self-start sm:self-auto flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-        >
-          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-          <span>Refresh Queue</span>
-        </button>
+        <div className="self-start sm:self-auto">
+          <LiveStatusIndicator />
+        </div>
       </div>
 
       {/* ACTION BANNER MESSAGE */}
@@ -628,8 +677,17 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
                   </div>
                 </div>
 
-                {/* Assignment Action Column */}
-                <div className="shrink-0 flex flex-col items-start md:items-end gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-line">
+                {/* Actions Column */}
+                <div className="shrink-0 flex flex-wrap md:flex-col items-start md:items-end gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-line">
+                  <button
+                    type="button"
+                    onClick={() => openInspectModal(issue)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold text-ink bg-soft hover:bg-card border border-line flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ImageIcon size={13} />
+                    <span>View Photos</span>
+                  </button>
+
                   {isAssignable ? (
                     <button
                       onClick={() => openAssignModal(issue.id)}
@@ -773,6 +831,151 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* 6. INSPECT TICKET PHOTOS & EVIDENCE MODAL */}
+      {inspectingIssue && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={closeInspectModal}
+        >
+          <div
+            className="w-full max-w-xl bg-card border border-line rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-line">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm font-black text-indigo-500">
+                  KX-{inspectingIssue.id}
+                </span>
+                {getStatusBadge(inspectingIssue.status)}
+                {getPriorityBadge(inspectingIssue.priority)}
+              </div>
+              <button
+                type="button"
+                onClick={closeInspectModal}
+                className="p-1 rounded-lg text-mute hover:text-ink cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-bold text-ink">
+                {inspectingIssue.title}
+              </h3>
+              <p className="text-xs text-mute whitespace-pre-wrap leading-relaxed">
+                {inspectingIssue.description}
+              </p>
+            </div>
+
+            {/* Photos & Evidence Sections */}
+            <div className="space-y-4 pt-2">
+              {/* Reported Photos */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-mute flex items-center gap-1.5">
+                  <ImageIcon size={14} />
+                  Reported Photos ({inspectImages.filter((i) => !i.imageType || i.imageType === "REPORTED").length})
+                </span>
+
+                {inspectImagesLoading ? (
+                  <div className="h-16 rounded-xl bg-soft animate-pulse" />
+                ) : inspectImages.filter((i) => !i.imageType || i.imageType === "REPORTED").length === 0 ? (
+                  <p className="text-xs text-mute italic bg-soft/50 p-2.5 rounded-xl border border-line">
+                    No photos were attached with the initial report.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {inspectImages
+                      .filter((i) => !i.imageType || i.imageType === "REPORTED")
+                      .map((img) => (
+                        <div
+                          key={img.id}
+                          onClick={() => setPreviewImageUrl(img.imageUrl)}
+                          className="aspect-video relative rounded-lg overflow-hidden border border-line bg-black/10 hover:opacity-90 transition-opacity cursor-pointer group"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={img.imageUrl}
+                            alt="Reported ticket photo"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
+                            View Fullscreen
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Resolution Evidence */}
+              {inspectImages.some((i) => i.imageType === "RESOLUTION") && (
+                <div className="space-y-2 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle2 size={14} />
+                    Resolution Evidence ({inspectImages.filter((i) => i.imageType === "RESOLUTION").length})
+                  </span>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {inspectImages
+                      .filter((i) => i.imageType === "RESOLUTION")
+                      .map((img) => (
+                        <div
+                          key={img.id}
+                          onClick={() => setPreviewImageUrl(img.imageUrl)}
+                          className="aspect-video relative rounded-lg overflow-hidden border border-emerald-500/40 bg-black/10 hover:opacity-90 transition-opacity cursor-pointer group"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={img.imageUrl}
+                            alt="Resolution evidence"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
+                            View Evidence
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={closeInspectModal}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-ink bg-soft border border-line hover:bg-card transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. FULLSCREEN IMAGE LIGHTBOX */}
+      {previewImageUrl && (
+        <div
+          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setPreviewImageUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewImageUrl(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+          >
+            <X size={20} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewImageUrl}
+            alt="Fullscreen Preview"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

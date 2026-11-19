@@ -23,4 +23,8 @@ public class IssueImage {
 
     @Column(nullable = false, unique = true)
     private String publicId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "image_type", nullable = false)
+    private IssueImageType imageType = IssueImageType.REPORTED;
 }

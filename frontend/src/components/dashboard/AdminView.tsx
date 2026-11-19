@@ -15,6 +15,7 @@ import {
   FolderTree,
   Building,
   X,
+  Image as ImageIcon,
 } from "lucide-react";
 import Combobox, { ComboboxOption } from "@/components/ui/Combobox";
 import {
@@ -25,8 +26,11 @@ import {
   CategoryResponse,
   LocationResponse,
   IssueResponse,
+  IssueImageResponse,
 } from "@/lib/api";
 import { AuthSession } from "@/lib/auth";
+import { useWebSocketSubscription } from "@/lib/websocket";
+import LiveStatusIndicator from "@/components/ui/LiveStatusIndicator";
 import RoleBadge from "./RoleBadge";
 
 interface AdminViewProps {
@@ -86,6 +90,50 @@ export default function AdminView({ user }: AdminViewProps) {
     null,
   );
   const [targetRole, setTargetRole] = useState<string>("STUDENT");
+
+  // Issue inspect & attachments viewer
+  const [inspectingIssue, setInspectingIssue] = useState<IssueResponse | null>(null);
+  const [adminIssueImages, setAdminIssueImages] = useState<IssueImageResponse[]>([]);
+  const [adminImagesLoading, setAdminImagesLoading] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  const openInspectModal = (issue: IssueResponse) => {
+    setInspectingIssue(issue);
+    setAdminImagesLoading(true);
+    api.issues
+      .getImages(issue.id)
+      .then((imgs) => setAdminIssueImages(imgs || []))
+      .catch(() => setAdminIssueImages([]))
+      .finally(() => setAdminImagesLoading(false));
+  };
+
+  const closeInspectModal = () => {
+    setInspectingIssue(null);
+    setAdminIssueImages([]);
+  };
+
+  // Real-time WebSocket subscription for administrator topics
+  useWebSocketSubscription<IssueResponse>("/topic/admin/issues", (event) => {
+    if (!event?.payload) return;
+    const issue = event.payload;
+    setAllIssues((prev: IssueResponse[]) => {
+      const idx = prev.findIndex((i) => i.id === issue.id);
+      if (idx !== -1) {
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], ...issue };
+        return copy;
+      }
+      if (event.type === "ISSUE_CREATED") {
+        return [issue, ...prev];
+      }
+      return prev;
+    });
+
+    // Silently refresh analytics counters
+    api.admin.getAnalytics().then((res) => setAnalytics(res)).catch(() => {});
+    api.admin.getCategoryAnalytics().then((res) => setCategoryStats(res || [])).catch(() => {});
+    api.admin.getLocationAnalytics().then((res) => setLocationStats(res || [])).catch(() => {});
+  });
 
   // Load all admin system data
   const loadAllData = useCallback(() => {
@@ -573,15 +621,9 @@ export default function AdminView({ user }: AdminViewProps) {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={loadAllData}
-            disabled={loading}
-            className="inline-flex items-center gap-2 self-start md:self-auto px-4 py-2 rounded-xl text-xs font-semibold text-ink bg-soft border border-line hover:bg-soft/80 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-            <span>Refresh System Data</span>
-          </button>
+          <div className="self-start md:self-auto">
+            <LiveStatusIndicator />
+          </div>
         </div>
 
         {/* Global Action Banner */}
@@ -1142,6 +1184,15 @@ export default function AdminView({ user }: AdminViewProps) {
                   <div className="flex items-center gap-2 self-end md:self-center">
                     <button
                       type="button"
+                      onClick={() => openInspectModal(issue)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold text-ink bg-soft hover:bg-card border border-line flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Inspect Ticket Photos & Evidence"
+                    >
+                      <ImageIcon size={14} />
+                      <span>Photos</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDeleteIssue(issue.id, issue.title)}
                       className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 transition-colors cursor-pointer"
                       title="Permanently Delete Issue"
@@ -1322,6 +1373,166 @@ export default function AdminView({ user }: AdminViewProps) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* MODAL: INSPECT ISSUE PHOTOS & EVIDENCE */}
+      {inspectingIssue && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={closeInspectModal}
+        >
+          <div
+            className="w-full max-w-xl bg-card border border-line rounded-2xl shadow-2xl p-6 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-line">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm font-black text-indigo-500">
+                  #{inspectingIssue.id}
+                </span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded bg-soft text-ink border border-line">
+                  {inspectingIssue.status}
+                </span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                  {inspectingIssue.priority}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={closeInspectModal}
+                className="p-1 rounded-lg text-mute hover:text-ink cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-bold text-ink">
+                {inspectingIssue.title}
+              </h3>
+              <p className="text-xs text-mute whitespace-pre-wrap leading-relaxed">
+                {inspectingIssue.description}
+              </p>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-mute pt-1">
+                {inspectingIssue.locationName && (
+                  <span>
+                    Location: {inspectingIssue.locationName}
+                    {inspectingIssue.floorRoom && ` (${inspectingIssue.floorRoom})`}
+                  </span>
+                )}
+                {inspectingIssue.reporterName && (
+                  <span>Reported by: {inspectingIssue.reporterName}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Photos & Evidence Sections */}
+            <div className="space-y-4 pt-1">
+              {/* Reported Photos */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-mute flex items-center gap-1.5">
+                  <ImageIcon size={14} />
+                  Reported Photos ({adminIssueImages.filter((i) => !i.imageType || i.imageType === "REPORTED").length})
+                </span>
+
+                {adminImagesLoading ? (
+                  <div className="h-16 rounded-xl bg-soft animate-pulse" />
+                ) : adminIssueImages.filter((i) => !i.imageType || i.imageType === "REPORTED").length === 0 ? (
+                  <p className="text-xs text-mute italic bg-soft/50 p-2.5 rounded-xl border border-line">
+                    No photos submitted with initial report.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {adminIssueImages
+                      .filter((i) => !i.imageType || i.imageType === "REPORTED")
+                      .map((img) => (
+                        <div
+                          key={img.id}
+                          onClick={() => setPreviewImageUrl(img.imageUrl)}
+                          className="aspect-video relative rounded-lg overflow-hidden border border-line bg-black/10 hover:opacity-90 transition-opacity cursor-pointer group"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={img.imageUrl}
+                            alt="Reported photo"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
+                            View Fullscreen
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Resolution Evidence */}
+              {adminIssueImages.some((i) => i.imageType === "RESOLUTION") && (
+                <div className="space-y-2 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <Check size={14} />
+                    Resolution Evidence ({adminIssueImages.filter((i) => i.imageType === "RESOLUTION").length})
+                  </span>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {adminIssueImages
+                      .filter((i) => i.imageType === "RESOLUTION")
+                      .map((img) => (
+                        <div
+                          key={img.id}
+                          onClick={() => setPreviewImageUrl(img.imageUrl)}
+                          className="aspect-video relative rounded-lg overflow-hidden border border-emerald-500/40 bg-black/10 hover:opacity-90 transition-opacity cursor-pointer group"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={img.imageUrl}
+                            alt="Resolution evidence"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
+                            View Evidence
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={closeInspectModal}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-ink bg-soft border border-line hover:bg-card transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULLSCREEN IMAGE LIGHTBOX */}
+      {previewImageUrl && (
+        <div
+          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setPreviewImageUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewImageUrl(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+          >
+            <X size={20} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewImageUrl}
+            alt="Fullscreen Preview"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

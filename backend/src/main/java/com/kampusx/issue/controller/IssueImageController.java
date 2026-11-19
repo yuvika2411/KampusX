@@ -1,5 +1,6 @@
 package com.kampusx.issue.controller;
 
+import com.kampusx.issue.entity.IssueImageType;
 import com.kampusx.issue.service.IssueImageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -18,7 +19,7 @@ public class IssueImageController {
 
     private final IssueImageService imageService;
 
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'RESOLVER', 'ADMIN')")
     @PostMapping(
             value = "/{issueId}/images",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -26,13 +27,15 @@ public class IssueImageController {
     public ResponseEntity<IssueImageService.ImageResponse> upload(
             @PathVariable Long issueId,
             @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "type", required = false, defaultValue = "REPORTED") IssueImageType type,
             Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(imageService.upload(
                         issueId,
                         file,
-                        authentication.getName()
+                        authentication.getName(),
+                        type
                 ));
     }
 

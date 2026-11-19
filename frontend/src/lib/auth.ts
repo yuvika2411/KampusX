@@ -59,6 +59,59 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   return body as T;
 }
 
+export async function uploadRequest<T>(path: string, formData: FormData): Promise<T> {
+  const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  const targetUrl = isLocalhost ? path : (API_BASE_URL ? `${API_BASE_URL}${path}` : path);
+
+  const session = getSession();
+  const headers: Record<string, string> = {};
+  if (session?.token) {
+    headers["Authorization"] = `Bearer ${session.token}`;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(targetUrl, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+  } catch {
+    if (typeof window !== "undefined" && targetUrl !== path) {
+      try {
+        response = await fetch(path, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+      } catch {
+        throw new Error("Unable to reach KampusX. Check your connection and try again.");
+      }
+    } else {
+      throw new Error("Unable to reach KampusX. Check your connection and try again.");
+    }
+  }
+
+  const text = await response.text();
+  let body: unknown;
+  try { body = text ? JSON.parse(text) : undefined; } catch { body = text; }
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearSession();
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        window.location.assign(window.location.origin + "/login?next=/dashboard");
+      }
+    }
+    const message = typeof body === "object" && body !== null && "error" in body && typeof (body as { error?: string }).error === "string"
+      ? (body as { error: string }).error
+      : typeof body === "object" && body !== null && "message" in body && typeof (body as { message?: string }).message === "string"
+        ? (body as { message: string }).message
+        : "Upload failed. Please try again.";
+    throw new Error(message);
+  }
+  return body as T;
+}
+
 function post<T>(path: string, body?: unknown): Promise<T> {
   return request<T>(path, {
     method: "POST",

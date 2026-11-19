@@ -8,7 +8,8 @@ import {
   fetchCurrentUser,
   clearSession,
 } from "@/lib/auth";
-import { api } from "@/lib/api";
+import { api, NotificationResponse } from "@/lib/api";
+import { useWebSocketSubscription } from "@/lib/websocket";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import NotificationsModal from "@/components/dashboard/NotificationsModal";
 import StudentView from "@/components/dashboard/StudentView";
@@ -27,6 +28,16 @@ export default function DashboardPage() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [studentTab, setStudentTab] = useState<"my" | "feed" | "report">("my");
+
+  // Real-time notification updates
+  useWebSocketSubscription<NotificationResponse>(
+    user ? "/user/queue/notifications" : null,
+    (event) => {
+      if (event?.payload) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    },
+  );
 
   useEffect(() => {
     let isMounted = true;
