@@ -22,7 +22,10 @@ export default function ResolverView({ user }: ResolverViewProps) {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
-  const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [actionMessage, setActionMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const loadData = () => {
     setLoading(true);
@@ -34,7 +37,10 @@ export default function ResolverView({ user }: ResolverViewProps) {
       .catch((err) => {
         setActionMessage({
           type: "error",
-          text: err instanceof Error ? err.message : "Failed to load assigned tasks",
+          text:
+            err instanceof Error
+              ? err.message
+              : "Failed to load assigned tasks",
         });
         setIssues([]);
       })
@@ -52,7 +58,10 @@ export default function ResolverView({ user }: ResolverViewProps) {
         if (isMounted) {
           setActionMessage({
             type: "error",
-            text: err instanceof Error ? err.message : "Failed to load assigned tasks",
+            text:
+              err instanceof Error
+                ? err.message
+                : "Failed to load assigned tasks",
           });
           setIssues([]);
         }
@@ -66,7 +75,10 @@ export default function ResolverView({ user }: ResolverViewProps) {
     };
   }, []);
 
-  const handleUpdateStatus = async (issueId: number, nextStatus: IssueStatus) => {
+  const handleUpdateStatus = async (
+    issueId: number,
+    nextStatus: IssueStatus,
+  ) => {
     setUpdatingId(issueId);
     setActionMessage(null);
     try {
@@ -79,7 +91,10 @@ export default function ResolverView({ user }: ResolverViewProps) {
     } catch (err: unknown) {
       setActionMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to update work order status",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to update work order status",
       });
     } finally {
       setUpdatingId(null);
@@ -87,16 +102,19 @@ export default function ResolverView({ user }: ResolverViewProps) {
   };
 
   const assignedCount = issues.filter((i) => i.status === "ASSIGNED").length;
-  const inProgressCount = issues.filter((i) => i.status === "IN_PROGRESS").length;
+  const inProgressCount = issues.filter(
+    (i) => i.status === "IN_PROGRESS",
+  ).length;
   const priorityCount = issues.filter(
-    (i) => i.priority === "HIGH" || i.priority === "CRITICAL"
+    (i) => i.priority === "HIGH" || i.priority === "CRITICAL",
   ).length;
 
   const filteredIssues = issues.filter((i) => {
     if (filterStatus === "ALL") return true;
     if (filterStatus === "ASSIGNED") return i.status === "ASSIGNED";
     if (filterStatus === "IN_PROGRESS") return i.status === "IN_PROGRESS";
-    if (filterStatus === "RESOLVED") return i.status === "RESOLVED" || i.status === "CLOSED";
+    if (filterStatus === "RESOLVED")
+      return i.status === "RESOLVED" || i.status === "CLOSED";
     return true;
   });
 
@@ -107,14 +125,12 @@ export default function ResolverView({ user }: ResolverViewProps) {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-ink tracking-tight">
-              Maintenance Field Queue
+              Welcome back, {user.name}
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-              {user.name || "Field Resolver"}
-            </span>
           </div>
           <p className="text-xs sm:text-sm text-mute mt-1">
-            Track your assigned work orders, initiate repair tasks, and submit completion updates.
+            Track your assigned work orders, initiate repair tasks, and submit
+            completion updates.
           </p>
         </div>
 
@@ -135,7 +151,10 @@ export default function ResolverView({ user }: ResolverViewProps) {
           }`}
         >
           <span>{actionMessage.text}</span>
-          <button onClick={() => setActionMessage(null)} className="underline text-[11px]">
+          <button
+            onClick={() => setActionMessage(null)}
+            className="underline text-[11px]"
+          >
             Dismiss
           </button>
         </div>
@@ -150,7 +169,9 @@ export default function ResolverView({ user }: ResolverViewProps) {
           <span className="text-2xl sm:text-3xl font-black text-ink mt-1 block">
             {issues.length}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Total assigned to you</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Total assigned to you
+          </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-card border border-line shadow-xs">
@@ -160,7 +181,9 @@ export default function ResolverView({ user }: ResolverViewProps) {
           <span className="text-2xl sm:text-3xl font-black text-blue-500 mt-1 block">
             {assignedCount}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Ready to initiate work</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Ready to initiate work
+          </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-card border border-line shadow-xs">
@@ -170,7 +193,9 @@ export default function ResolverView({ user }: ResolverViewProps) {
           <span className="text-2xl sm:text-3xl font-black text-indigo-500 mt-1 block">
             {inProgressCount}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Currently active tasks</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Currently active tasks
+          </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-card border border-line shadow-xs">
@@ -180,7 +205,9 @@ export default function ResolverView({ user }: ResolverViewProps) {
           <span className="text-2xl sm:text-3xl font-black text-rose-500 mt-1 block">
             {priorityCount}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Urgent or high impact</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Urgent or high impact
+          </span>
         </div>
       </div>
 
@@ -204,10 +231,10 @@ export default function ResolverView({ user }: ResolverViewProps) {
               {statusKey === "ALL"
                 ? "All Tasks"
                 : statusKey === "ASSIGNED"
-                ? "Pending Start"
-                : statusKey === "IN_PROGRESS"
-                ? "In Progress"
-                : "Completed"}
+                  ? "Pending Start"
+                  : statusKey === "IN_PROGRESS"
+                    ? "In Progress"
+                    : "Completed"}
             </button>
           ))}
         </div>
@@ -227,8 +254,12 @@ export default function ResolverView({ user }: ResolverViewProps) {
         ) : filteredIssues.length === 0 ? (
           <div className="p-12 rounded-2xl bg-card border border-line text-center text-mute">
             <Wrench className="w-8 h-8 mx-auto mb-2 opacity-30 text-emerald-500" />
-            <p className="text-sm font-semibold text-ink">No assigned work orders</p>
-            <p className="text-xs mt-1">Check back later or refresh when tasks are dispatched.</p>
+            <p className="text-sm font-semibold text-ink">
+              No assigned work orders
+            </p>
+            <p className="text-xs mt-1">
+              Check back later or refresh when tasks are dispatched.
+            </p>
           </div>
         ) : (
           filteredIssues.map((issue) => (
@@ -246,8 +277,8 @@ export default function ResolverView({ user }: ResolverViewProps) {
                       issue.status === "ASSIGNED"
                         ? "text-blue-500 bg-blue-500/10 border border-blue-500/30"
                         : issue.status === "IN_PROGRESS"
-                        ? "text-indigo-500 bg-indigo-500/10 border border-indigo-500/30"
-                        : "text-emerald-500 bg-emerald-500/10 border border-emerald-500/30"
+                          ? "text-indigo-500 bg-indigo-500/10 border border-indigo-500/30"
+                          : "text-emerald-500 bg-emerald-500/10 border border-emerald-500/30"
                     }`}
                   >
                     {issue.status === "IN_PROGRESS" && (
@@ -275,7 +306,9 @@ export default function ResolverView({ user }: ResolverViewProps) {
                       {issue.locationName}
                     </span>
                   )}
-                  <span>Reporter: {issue.reporterName || "Campus Student"}</span>
+                  <span>
+                    Reporter: {issue.reporterName || "Campus Student"}
+                  </span>
                 </div>
               </div>
 

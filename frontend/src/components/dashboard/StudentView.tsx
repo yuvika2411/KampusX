@@ -31,7 +31,10 @@ import {
   FlaskConical,
   Wifi,
 } from "lucide-react";
-import Combobox, { ComboboxOption, ComboboxGroupMeta } from "@/components/ui/Combobox";
+import Combobox, {
+  ComboboxOption,
+  ComboboxGroupMeta,
+} from "@/components/ui/Combobox";
 import {
   api,
   IssueResponse,
@@ -125,7 +128,9 @@ export default function StudentView({
   onTabChange,
 }: StudentViewProps) {
   // Navigation tab state
-  const [internalTab, setInternalTab] = useState<"my" | "feed" | "report">(initialTab);
+  const [internalTab, setInternalTab] = useState<"my" | "feed" | "report">(
+    initialTab,
+  );
   const activeTab = controlledTab ?? internalTab;
   const setActiveTab = (tab: "my" | "feed" | "report") => {
     if (onTabChange) onTabChange(tab);
@@ -138,7 +143,9 @@ export default function StudentView({
   const [myIssuesError, setMyIssuesError] = useState<string | null>(null);
 
   // Campus Feed states (paginated via /api/issues/search)
-  const [feedData, setFeedData] = useState<PageResponse<IssueResponse> | null>(null);
+  const [feedData, setFeedData] = useState<PageResponse<IssueResponse> | null>(
+    null,
+  );
   const [feedLoading, setFeedLoading] = useState(false);
   const [feedError, setFeedError] = useState<string | null>(null);
   const [feedSearch, setFeedSearch] = useState("");
@@ -149,7 +156,9 @@ export default function StudentView({
 
   // Filter & sort for "My Issues"
   const [myStatusFilter, setMyStatusFilter] = useState<string>("All");
-  const [mySortOrder, setMySortOrder] = useState<"newest" | "oldest" | "upvotes">("newest");
+  const [mySortOrder, setMySortOrder] = useState<
+    "newest" | "oldest" | "upvotes"
+  >("newest");
 
   // Metadata
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
@@ -159,13 +168,20 @@ export default function StudentView({
 
   // Upvoting action state
   const [votingIssueId, setVotingIssueId] = useState<number | null>(null);
-  const [actionAlert, setActionAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [actionAlert, setActionAlert] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Detail Modal / Drawer state
-  const [selectedIssue, setSelectedIssue] = useState<IssueResponse | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<IssueResponse | null>(
+    null,
+  );
   const [detailImages, setDetailImages] = useState<IssueImageResponse[]>([]);
   const [detailImagesLoading, setDetailImagesLoading] = useState(false);
-  const [detailComments, setDetailComments] = useState<IssueCommentResponse[]>([]);
+  const [detailComments, setDetailComments] = useState<IssueCommentResponse[]>(
+    [],
+  );
   const [detailCommentsLoading, setDetailCommentsLoading] = useState(false);
   const [newCommentText, setNewCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -173,8 +189,10 @@ export default function StudentView({
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   // Confirmation Modals (Confirm & Close, Reopen)
-  const [confirmCloseTarget, setConfirmCloseTarget] = useState<IssueResponse | null>(null);
-  const [confirmReopenTarget, setConfirmReopenTarget] = useState<IssueResponse | null>(null);
+  const [confirmCloseTarget, setConfirmCloseTarget] =
+    useState<IssueResponse | null>(null);
+  const [confirmReopenTarget, setConfirmReopenTarget] =
+    useState<IssueResponse | null>(null);
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
 
   // Form states for creating an issue
@@ -204,7 +222,9 @@ export default function StudentView({
         setMyIssues(data || []);
       })
       .catch((err) => {
-        setMyIssuesError(err instanceof Error ? err.message : "Failed to load your issues.");
+        setMyIssuesError(
+          err instanceof Error ? err.message : "Failed to load your issues.",
+        );
       })
       .finally(() => {
         setMyIssuesLoading(false);
@@ -232,7 +252,9 @@ export default function StudentView({
         setFeedData(res);
       })
       .catch((err) => {
-        setFeedError(err instanceof Error ? err.message : "Failed to load campus feed.");
+        setFeedError(
+          err instanceof Error ? err.message : "Failed to load campus feed.",
+        );
       })
       .finally(() => {
         setFeedLoading(false);
@@ -249,7 +271,11 @@ export default function StudentView({
         setLocations(data || []);
       })
       .catch((err) => {
-        setLocationsError(err instanceof Error ? err.message : "Failed to load campus locations.");
+        setLocationsError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load campus locations.",
+        );
       })
       .finally(() => {
         setLocationsLoading(false);
@@ -266,7 +292,10 @@ export default function StudentView({
         if (isMounted) setMyIssues(data || []);
       })
       .catch((err) => {
-        if (isMounted) setMyIssuesError(err instanceof Error ? err.message : "Failed to load your issues.");
+        if (isMounted)
+          setMyIssuesError(
+            err instanceof Error ? err.message : "Failed to load your issues.",
+          );
       })
       .finally(() => {
         if (isMounted) setMyIssuesLoading(false);
@@ -278,7 +307,12 @@ export default function StudentView({
         if (isMounted) setLocations(data || []);
       })
       .catch((err) => {
-        if (isMounted) setLocationsError(err instanceof Error ? err.message : "Failed to load campus locations.");
+        if (isMounted)
+          setLocationsError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load campus locations.",
+          );
       })
       .finally(() => {
         if (isMounted) setLocationsLoading(false);
@@ -317,7 +351,10 @@ export default function StudentView({
         if (isMounted) setFeedData(res);
       })
       .catch((err) => {
-        if (isMounted) setFeedError(err instanceof Error ? err.message : "Failed to load campus feed.");
+        if (isMounted)
+          setFeedError(
+            err instanceof Error ? err.message : "Failed to load campus feed.",
+          );
       })
       .finally(() => {
         if (isMounted) setFeedLoading(false);
@@ -326,7 +363,15 @@ export default function StudentView({
     return () => {
       isMounted = false;
     };
-  }, [activeTab, categories, feedSearch, feedStatus, feedCategory, feedSort, feedPage]);
+  }, [
+    activeTab,
+    categories,
+    feedSearch,
+    feedStatus,
+    feedCategory,
+    feedSort,
+    feedPage,
+  ]);
 
   // Options for modern Combobox components
   const categoryOptions: ComboboxOption[] = useMemo(() => {
@@ -386,7 +431,10 @@ export default function StudentView({
   };
 
   // Upvote an issue (Optimistic update with rollback)
-  const handleVote = async (targetIssue: IssueResponse, e?: React.MouseEvent) => {
+  const handleVote = async (
+    targetIssue: IssueResponse,
+    e?: React.MouseEvent,
+  ) => {
     if (e) e.stopPropagation();
 
     if (targetIssue.hasVoted) {
@@ -461,7 +509,8 @@ export default function StudentView({
         });
       }
 
-      const msg = err instanceof Error ? err.message : "Failed to record upvote.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to record upvote.";
       setActionAlert({ type: "error", message: msg });
     } finally {
       setVotingIssueId(null);
@@ -477,7 +526,10 @@ export default function StudentView({
     setCommentError(null);
 
     try {
-      const added = await api.issues.addComment(selectedIssue.id, newCommentText.trim());
+      const added = await api.issues.addComment(
+        selectedIssue.id,
+        newCommentText.trim(),
+      );
       setDetailComments((prev) => [...prev, added]);
       setNewCommentText("");
 
@@ -488,18 +540,20 @@ export default function StudentView({
       };
       setSelectedIssue(updatedIssue);
       setMyIssues((prev) =>
-        prev.map((i) => (i.id === selectedIssue.id ? updatedIssue : i))
+        prev.map((i) => (i.id === selectedIssue.id ? updatedIssue : i)),
       );
       if (feedData) {
         setFeedData({
           ...feedData,
           content: feedData.content.map((i) =>
-            i.id === selectedIssue.id ? updatedIssue : i
+            i.id === selectedIssue.id ? updatedIssue : i,
           ),
         });
       }
     } catch (err: unknown) {
-      setCommentError(err instanceof Error ? err.message : "Failed to post comment.");
+      setCommentError(
+        err instanceof Error ? err.message : "Failed to post comment.",
+      );
     } finally {
       setSubmittingComment(false);
     }
@@ -604,7 +658,9 @@ export default function StudentView({
         floorRoom: formFloorRoom.trim(),
       });
 
-      setFormSuccess("Issue submitted successfully! Your campus desk has been notified.");
+      setFormSuccess(
+        "Issue submitted successfully! Your campus desk has been notified.",
+      );
       setFormTitle("");
       setFormDescription("");
       setFormCategoryId("");
@@ -617,7 +673,11 @@ export default function StudentView({
         setFormSuccess("");
       }, 1500);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : "Failed to create issue. Please try again.");
+      setFormError(
+        err instanceof Error
+          ? err.message
+          : "Failed to create issue. Please try again.",
+      );
     } finally {
       setFormSubmitting(false);
     }
@@ -625,16 +685,21 @@ export default function StudentView({
 
   // Calculate real stat card values
   const beingWorkedOnCount = myIssues.filter(
-    (i) => i.status === "ASSIGNED" || i.status === "IN_PROGRESS"
+    (i) => i.status === "ASSIGNED" || i.status === "IN_PROGRESS",
   ).length;
 
   const resolvedOrClosedCount = myIssues.filter(
-    (i) => i.status === "RESOLVED" || i.status === "CLOSED"
+    (i) => i.status === "RESOLVED" || i.status === "CLOSED",
   ).length;
 
-  const totalMyVotes = myIssues.reduce((acc, curr) => acc + (curr.voteCount || 0), 0);
+  const totalMyVotes = myIssues.reduce(
+    (acc, curr) => acc + (curr.voteCount || 0),
+    0,
+  );
 
-  const awaitingConfirmationCount = myIssues.filter((i) => i.status === "RESOLVED").length;
+  const awaitingConfirmationCount = myIssues.filter(
+    (i) => i.status === "RESOLVED",
+  ).length;
 
   // Filtered & Sorted "My Issues"
   const filteredMyIssues = useMemo(() => {
@@ -645,7 +710,8 @@ export default function StudentView({
     list.sort((a, b) => {
       if (mySortOrder === "newest") return b.id - a.id;
       if (mySortOrder === "oldest") return a.id - b.id;
-      if (mySortOrder === "upvotes") return (b.voteCount || 0) - (a.voteCount || 0);
+      if (mySortOrder === "upvotes")
+        return (b.voteCount || 0) - (a.voteCount || 0);
       return 0;
     });
     return list;
@@ -730,13 +796,22 @@ export default function StudentView({
     if (status === "REOPENED") {
       return (
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold">
-          <RotateCcw size={14} className="animate-spin text-rose-500" style={{ animationDuration: "3s" }} />
-          <span>Ticket Reopened — Awaiting resolver re-engagement & revised maintenance.</span>
+          <RotateCcw
+            size={14}
+            className="animate-spin text-rose-500"
+            style={{ animationDuration: "3s" }}
+          />
+          <span>
+            Ticket Reopened — Awaiting resolver re-engagement & revised
+            maintenance.
+          </span>
         </div>
       );
     }
 
-    const currentStepIndex = WORKFLOW_STEPS.findIndex((s) => s.status === status);
+    const currentStepIndex = WORKFLOW_STEPS.findIndex(
+      (s) => s.status === status,
+    );
 
     return (
       <div className="w-full pt-1 pb-1">
@@ -755,21 +830,28 @@ export default function StudentView({
             const isCompleted = idx <= currentStepIndex;
             const isCurrent = idx === currentStepIndex;
             return (
-              <div key={step.status} className="flex flex-col items-center relative z-10">
+              <div
+                key={step.status}
+                className="flex flex-col items-center relative z-10"
+              >
                 <div
                   className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
                     isCurrent
                       ? "bg-indigo-600 text-white ring-4 ring-indigo-500/20"
                       : isCompleted
-                      ? "bg-indigo-500 text-white"
-                      : "bg-card border border-line text-mute"
+                        ? "bg-indigo-500 text-white"
+                        : "bg-card border border-line text-mute"
                   }`}
                 >
                   {isCompleted ? <Check size={11} strokeWidth={3} /> : idx + 1}
                 </div>
                 <span
                   className={`text-[10px] mt-1 font-medium ${
-                    isCurrent ? "font-bold text-indigo-500" : isCompleted ? "text-ink" : "text-mute"
+                    isCurrent
+                      ? "font-bold text-indigo-500"
+                      : isCompleted
+                        ? "text-ink"
+                        : "text-mute"
                   }`}
                 >
                   {step.label}
@@ -800,7 +882,10 @@ export default function StudentView({
           <div className="text-xs sm:text-sm text-mute flex items-center gap-2">
             {awaitingConfirmationCount > 0 ? (
               <div className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                <AlertTriangle size={14} className="shrink-0 text-emerald-500" />
+                <AlertTriangle
+                  size={14}
+                  className="shrink-0 text-emerald-500"
+                />
                 <span>
                   {awaitingConfirmationCount === 1
                     ? "1 issue is waiting for your confirmation & closure."
@@ -819,7 +904,10 @@ export default function StudentView({
             ) : myIssues.length > 0 ? (
               <span>All reported issues are currently tracked or closed.</span>
             ) : (
-              <span>No active reports logged yet. Spotted an issue on campus? Report it below.</span>
+              <span>
+                No active reports logged yet. Spotted an issue on campus? Report
+                it below.
+              </span>
             )}
           </div>
         </div>
@@ -845,7 +933,11 @@ export default function StudentView({
           }`}
         >
           <div className="flex items-center gap-2">
-            {actionAlert.type === "success" ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
+            {actionAlert.type === "success" ? (
+              <CheckCircle size={15} />
+            ) : (
+              <AlertCircle size={15} />
+            )}
             <span>{actionAlert.message}</span>
           </div>
           <button
@@ -867,7 +959,9 @@ export default function StudentView({
           <span className="text-2xl sm:text-3xl font-black text-ink mt-1 block">
             {myIssuesLoading ? "…" : myIssues.length}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Tickets logged by your account</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Tickets logged by your account
+          </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-card border border-line shadow-xs">
@@ -877,7 +971,9 @@ export default function StudentView({
           <span className="text-2xl sm:text-3xl font-black text-indigo-500 mt-1 block">
             {myIssuesLoading ? "…" : beingWorkedOnCount}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Assigned & in-progress tickets</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Assigned & in-progress tickets
+          </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-card border border-line shadow-xs">
@@ -887,7 +983,9 @@ export default function StudentView({
           <span className="text-2xl sm:text-3xl font-black text-emerald-500 mt-1 block">
             {myIssuesLoading ? "…" : resolvedOrClosedCount}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Verified resolutions & closures</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Verified resolutions & closures
+          </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-card border border-line shadow-xs">
@@ -897,7 +995,9 @@ export default function StudentView({
           <span className="text-2xl sm:text-3xl font-black text-blue-500 mt-1 block">
             {myIssuesLoading ? "…" : totalMyVotes}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Peers backing your reports</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Peers backing your reports
+          </span>
         </div>
       </div>
 
@@ -972,10 +1072,16 @@ export default function StudentView({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-mute shrink-0">Sort:</span>
+              <span className="text-xs font-semibold text-mute shrink-0">
+                Sort:
+              </span>
               <select
                 value={mySortOrder}
-                onChange={(e) => setMySortOrder(e.target.value as "newest" | "oldest" | "upvotes")}
+                onChange={(e) =>
+                  setMySortOrder(
+                    e.target.value as "newest" | "oldest" | "upvotes",
+                  )
+                }
                 className="rounded-xl border border-line bg-soft px-3 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-[#818cf8]"
               >
                 <option value="newest">Newest First</option>
@@ -988,7 +1094,10 @@ export default function StudentView({
                 title="Refresh issues"
                 className="p-1.5 rounded-xl border border-line bg-soft text-mute hover:text-ink transition-colors cursor-pointer"
               >
-                <RefreshCw size={14} className={myIssuesLoading ? "animate-spin" : ""} />
+                <RefreshCw
+                  size={14}
+                  className={myIssuesLoading ? "animate-spin" : ""}
+                />
               </button>
             </div>
           </div>
@@ -1015,8 +1124,12 @@ export default function StudentView({
             /* Error State with Retry */
             <div className="p-8 rounded-2xl bg-card border border-rose-500/20 text-center space-y-3">
               <AlertCircle className="w-8 h-8 mx-auto text-rose-500" />
-              <h3 className="text-sm font-bold text-ink">Failed to load your issues</h3>
-              <p className="text-xs text-mute max-w-md mx-auto">{myIssuesError}</p>
+              <h3 className="text-sm font-bold text-ink">
+                Failed to load your issues
+              </h3>
+              <p className="text-xs text-mute max-w-md mx-auto">
+                {myIssuesError}
+              </p>
               <button
                 type="button"
                 onClick={loadMyIssues}
@@ -1083,7 +1196,9 @@ export default function StudentView({
 
                       {/* Title & Description Snippet */}
                       <div>
-                        <h3 className="text-sm font-bold text-ink line-clamp-2">{issue.title}</h3>
+                        <h3 className="text-sm font-bold text-ink line-clamp-2">
+                          {issue.title}
+                        </h3>
                         <p className="text-xs text-mute line-clamp-2 leading-relaxed mt-1">
                           {issue.description}
                         </p>
@@ -1112,17 +1227,23 @@ export default function StudentView({
                       </div>
 
                       {/* Workflow Stepper Tracker */}
-                      <div className="pt-2">{renderWorkflowStepper(issue.status)}</div>
+                      <div className="pt-2">
+                        {renderWorkflowStepper(issue.status)}
+                      </div>
 
                       {/* Special Banner if RESOLVED: Needs confirmation */}
                       {isResolved && (
                         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs space-y-1">
                           <div className="font-bold flex items-center gap-1.5">
-                            <CheckCircle2 size={14} className="text-emerald-500" />
+                            <CheckCircle2
+                              size={14}
+                              className="text-emerald-500"
+                            />
                             <span>Needs your confirmation</span>
                           </div>
                           <p className="text-[11px] text-mute">
-                            Maintenance has marked this resolved. Please verify the fix.
+                            Maintenance has marked this resolved. Please verify
+                            the fix.
                           </p>
                         </div>
                       )}
@@ -1140,17 +1261,28 @@ export default function StudentView({
                             ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-500"
                             : "bg-soft border-line text-mute hover:text-ink hover:border-indigo-500"
                         }`}
-                        title={issue.hasVoted ? "You have upvoted this issue" : "Upvote ticket"}
+                        title={
+                          issue.hasVoted
+                            ? "You have upvoted this issue"
+                            : "Upvote ticket"
+                        }
                       >
                         <ThumbsUp
                           size={12}
-                          className={issue.hasVoted ? "fill-indigo-500 text-indigo-500" : ""}
+                          className={
+                            issue.hasVoted
+                              ? "fill-indigo-500 text-indigo-500"
+                              : ""
+                          }
                         />
                         <span>{issue.voteCount || 0}</span>
                       </button>
 
                       {/* Student Confirmation Buttons */}
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {isResolved && (
                           <>
                             <button
@@ -1183,10 +1315,19 @@ export default function StudentView({
                           </button>
                         )}
 
-                        <span className="text-[11px] font-semibold text-indigo-500 flex items-center gap-0.5 ml-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openIssueDetail(issue);
+                          }}
+                          className="text-[11px] font-semibold text-indigo-500 
+             flex items-center gap-0.5 ml-1
+             hover:text-indigo-700 transition-colors cursor-pointer"
+                        >
                           <span>Details</span>
                           <ChevronRight size={13} />
-                        </span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1245,7 +1386,9 @@ export default function StudentView({
 
               {/* Status Filter */}
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-mute shrink-0">Status:</span>
+                <span className="text-xs font-semibold text-mute shrink-0">
+                  Status:
+                </span>
                 <select
                   value={feedStatus}
                   onChange={(e) => {
@@ -1265,7 +1408,9 @@ export default function StudentView({
 
               {/* Sort Order */}
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-mute shrink-0">Sort:</span>
+                <span className="text-xs font-semibold text-mute shrink-0">
+                  Sort:
+                </span>
                 <select
                   value={feedSort}
                   onChange={(e) => {
@@ -1302,7 +1447,9 @@ export default function StudentView({
           ) : feedError ? (
             <div className="p-8 rounded-2xl bg-card border border-rose-500/20 text-center space-y-3">
               <AlertCircle className="w-8 h-8 mx-auto text-rose-500" />
-              <h3 className="text-sm font-bold text-ink">Failed to load campus feed</h3>
+              <h3 className="text-sm font-bold text-ink">
+                Failed to load campus feed
+              </h3>
               <p className="text-xs text-mute max-w-md mx-auto">{feedError}</p>
               <button
                 type="button"
@@ -1316,8 +1463,12 @@ export default function StudentView({
           ) : !feedData || feedData.content.length === 0 ? (
             <div className="p-12 rounded-2xl bg-card border border-line text-center text-mute space-y-2">
               <Search className="w-8 h-8 mx-auto opacity-30 text-indigo-500" />
-              <p className="text-sm font-semibold text-ink">No matching campus issues found</p>
-              <p className="text-xs">Try adjusting your keyword, category, or status filters.</p>
+              <p className="text-sm font-semibold text-ink">
+                No matching campus issues found
+              </p>
+              <p className="text-xs">
+                Try adjusting your keyword, category, or status filters.
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -1345,7 +1496,9 @@ export default function StudentView({
                         </span>
                       </div>
 
-                      <h4 className="text-sm font-bold text-ink leading-snug">{issue.title}</h4>
+                      <h4 className="text-sm font-bold text-ink leading-snug">
+                        {issue.title}
+                      </h4>
                       <p className="text-xs text-mute leading-relaxed line-clamp-2">
                         {issue.description}
                       </p>
@@ -1368,17 +1521,23 @@ export default function StudentView({
                         )}
                         <span className="text-mute">
                           {isReporterSelf ? (
-                            <strong className="text-indigo-500 font-semibold">Reported by you</strong>
+                            <strong className="text-indigo-500 font-semibold">
+                              Reported by you
+                            </strong>
                           ) : (
                             "Reported by a student"
                           )}
                         </span>
-                        {issue.commentCount !== undefined && issue.commentCount > 0 && (
-                          <span className="flex items-center gap-1 text-mute">
-                            <MessageSquare size={11} />
-                            {issue.commentCount} {issue.commentCount === 1 ? "comment" : "comments"}
-                          </span>
-                        )}
+                        {issue.commentCount !== undefined &&
+                          issue.commentCount > 0 && (
+                            <span className="flex items-center gap-1 text-mute">
+                              <MessageSquare size={11} />
+                              {issue.commentCount}{" "}
+                              {issue.commentCount === 1
+                                ? "comment"
+                                : "comments"}
+                            </span>
+                          )}
                       </div>
                     </div>
 
@@ -1392,12 +1551,18 @@ export default function StudentView({
                           ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-500 ring-1 ring-indigo-500/20"
                           : "bg-soft border-line text-ink hover:border-indigo-500 hover:text-indigo-500"
                       }`}
-                      title={issue.hasVoted ? "You have upvoted this issue" : "Upvote if this affects you"}
+                      title={
+                        issue.hasVoted
+                          ? "You have upvoted this issue"
+                          : "Upvote if this affects you"
+                      }
                     >
                       <ThumbsUp
                         size={16}
                         className={`mb-1 transition-transform ${
-                          issue.hasVoted ? "fill-indigo-500 text-indigo-500" : "text-mute hover:scale-110"
+                          issue.hasVoted
+                            ? "fill-indigo-500 text-indigo-500"
+                            : "text-mute hover:scale-110"
                         }`}
                       />
                       <span>{issue.voteCount || 0}</span>
@@ -1410,7 +1575,9 @@ export default function StudentView({
               {feedData.totalPages > 1 && (
                 <div className="flex items-center justify-between p-4 rounded-2xl bg-card border border-line text-xs">
                   <span className="text-mute">
-                    Page <strong>{feedData.number + 1}</strong> of <strong>{feedData.totalPages}</strong> ({feedData.totalElements} issues)
+                    Page <strong>{feedData.number + 1}</strong> of{" "}
+                    <strong>{feedData.totalPages}</strong> (
+                    {feedData.totalElements} issues)
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -1424,7 +1591,10 @@ export default function StudentView({
                     </button>
                     <button
                       type="button"
-                      disabled={feedData.number + 1 >= feedData.totalPages || feedLoading}
+                      disabled={
+                        feedData.number + 1 >= feedData.totalPages ||
+                        feedLoading
+                      }
                       onClick={() => setFeedPage((p) => p + 1)}
                       className="px-3 py-1.5 rounded-lg border border-line bg-soft text-ink font-semibold disabled:opacity-40 flex items-center gap-1 cursor-pointer"
                     >
@@ -1445,9 +1615,12 @@ export default function StudentView({
       {activeTab === "report" && (
         <div className="max-w-2xl mx-auto rounded-2xl bg-card border border-line p-6 sm:p-8 shadow-sm">
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-ink">Submit a Campus Maintenance Ticket</h2>
+            <h2 className="text-lg font-bold text-ink">
+              Submit a Campus Maintenance Ticket
+            </h2>
             <p className="text-xs text-mute mt-1">
-              Your issue will be categorized and routed to the assigned department head immediately.
+              Your issue will be categorized and routed to the assigned
+              department head immediately.
             </p>
           </div>
 
@@ -1484,7 +1657,9 @@ export default function StudentView({
                 } bg-soft px-3.5 py-2.5 text-xs font-medium text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-[#818cf8]`}
               />
               {fieldErrors.title && (
-                <p className="text-[11px] text-rose-500 mt-1">{fieldErrors.title}</p>
+                <p className="text-[11px] text-rose-500 mt-1">
+                  {fieldErrors.title}
+                </p>
               )}
             </div>
 
@@ -1497,7 +1672,10 @@ export default function StudentView({
                   value={formCategoryId}
                   onChange={(val) => {
                     setFormCategoryId(val === "" ? "" : Number(val));
-                    setFieldErrors((prev) => ({ ...prev, category: undefined }));
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      category: undefined,
+                    }));
                   }}
                   options={categoryOptions}
                   placeholder="Select a Category"
@@ -1515,7 +1693,10 @@ export default function StudentView({
                   value={formLocationId}
                   onChange={(val) => {
                     setFormLocationId(val === "" ? "" : Number(val));
-                    setFieldErrors((prev) => ({ ...prev, location: undefined }));
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      location: undefined,
+                    }));
                   }}
                   options={locationOptions}
                   groupMeta={LOCATION_GROUP_META}
@@ -1548,7 +1729,9 @@ export default function StudentView({
                 } bg-soft px-3.5 py-2.5 text-xs font-medium text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-[#818cf8]`}
               />
               {fieldErrors.floorRoom && (
-                <p className="text-[11px] text-rose-500 mt-1">{fieldErrors.floorRoom}</p>
+                <p className="text-[11px] text-rose-500 mt-1">
+                  {fieldErrors.floorRoom}
+                </p>
               )}
             </div>
 
@@ -1562,14 +1745,19 @@ export default function StudentView({
                 value={formDescription}
                 onChange={(e) => {
                   setFormDescription(e.target.value);
-                  setFieldErrors((prev) => ({ ...prev, description: undefined }));
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    description: undefined,
+                  }));
                 }}
                 className={`w-full rounded-xl border ${
                   fieldErrors.description ? "border-rose-500" : "border-line"
                 } bg-soft px-3.5 py-2.5 text-xs font-medium text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-[#818cf8] resize-none`}
               />
               {fieldErrors.description && (
-                <p className="text-[11px] text-rose-500 mt-1">{fieldErrors.description}</p>
+                <p className="text-[11px] text-rose-500 mt-1">
+                  {fieldErrors.description}
+                </p>
               )}
             </div>
 
@@ -1655,7 +1843,9 @@ export default function StudentView({
                 {renderWorkflowStepper(selectedIssue.status)}
                 {selectedIssue.status === "RESOLVED" && (
                   <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
-                    Resolver has completed work. As the reporting student, you may confirm and close this ticket or reopen it if incomplete.
+                    Resolver has completed work. As the reporting student, you
+                    may confirm and close this ticket or reopen it if
+                    incomplete.
                   </p>
                 )}
               </div>
@@ -1675,13 +1865,17 @@ export default function StudentView({
                   </span>
                 </div>
                 <div>
-                  <span className="text-mute block text-[11px]">Floor / Room</span>
+                  <span className="text-mute block text-[11px]">
+                    Floor / Room
+                  </span>
                   <span className="font-semibold text-ink">
                     {selectedIssue.floorRoom || "Unspecified"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-mute block text-[11px]">Reported On</span>
+                  <span className="text-mute block text-[11px]">
+                    Reported On
+                  </span>
                   <span className="font-semibold text-ink">
                     {formatIssueDate(selectedIssue.createdAt) || "Recorded"}
                   </span>
@@ -1694,13 +1888,17 @@ export default function StudentView({
                   <ThumbsUp size={16} className="text-indigo-500" />
                   <span className="text-xs text-ink font-semibold">
                     {selectedIssue.voteCount || 0}{" "}
-                    {selectedIssue.voteCount === 1 ? "student affected" : "students affected"}
+                    {selectedIssue.voteCount === 1
+                      ? "student affected"
+                      : "students affected"}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleVote(selectedIssue)}
-                  disabled={selectedIssue.hasVoted || votingIssueId === selectedIssue.id}
+                  disabled={
+                    selectedIssue.hasVoted || votingIssueId === selectedIssue.id
+                  }
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer ${
                     selectedIssue.hasVoted
                       ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-500"
@@ -1709,9 +1907,15 @@ export default function StudentView({
                 >
                   <ThumbsUp
                     size={13}
-                    className={selectedIssue.hasVoted ? "fill-indigo-500 text-indigo-500" : ""}
+                    className={
+                      selectedIssue.hasVoted
+                        ? "fill-indigo-500 text-indigo-500"
+                        : ""
+                    }
                   />
-                  <span>{selectedIssue.hasVoted ? "Upvoted" : "Upvote Ticket"}</span>
+                  <span>
+                    {selectedIssue.hasVoted ? "Upvoted" : "Upvote Ticket"}
+                  </span>
                 </button>
               </div>
 
@@ -1723,7 +1927,10 @@ export default function StudentView({
                     Attached Images
                   </span>
                   {detailImagesLoading && (
-                    <Loader2 size={13} className="animate-spin text-indigo-500" />
+                    <Loader2
+                      size={13}
+                      className="animate-spin text-indigo-500"
+                    />
                   )}
                 </div>
 
@@ -1764,7 +1971,10 @@ export default function StudentView({
                     Comments ({detailComments.length})
                   </span>
                   {detailCommentsLoading && (
-                    <Loader2 size={13} className="animate-spin text-indigo-500" />
+                    <Loader2
+                      size={13}
+                      className="animate-spin text-indigo-500"
+                    />
                   )}
                 </div>
 
@@ -1823,7 +2033,9 @@ export default function StudentView({
                             {c.userName || "Campus Student"}
                           </span>
                         </div>
-                        <p className="text-ink text-xs leading-relaxed">{c.comment}</p>
+                        <p className="text-ink text-xs leading-relaxed">
+                          {c.comment}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -1898,11 +2110,16 @@ export default function StudentView({
             </div>
 
             <div className="text-center space-y-1">
-              <h3 className="text-base font-bold text-ink">Confirm Issue Resolution?</h3>
+              <h3 className="text-base font-bold text-ink">
+                Confirm Issue Resolution?
+              </h3>
               <p className="text-xs text-mute leading-relaxed">
                 Are you satisfied with the maintenance fix for ticket{" "}
-                <strong className="text-indigo-500">KX-{confirmCloseTarget.id}</strong> (
-                {confirmCloseTarget.title})? This will mark the issue permanently closed.
+                <strong className="text-indigo-500">
+                  KX-{confirmCloseTarget.id}
+                </strong>{" "}
+                ({confirmCloseTarget.title})? This will mark the issue
+                permanently closed.
               </p>
             </div>
 
@@ -1952,11 +2169,16 @@ export default function StudentView({
             </div>
 
             <div className="text-center space-y-1">
-              <h3 className="text-base font-bold text-ink">Reopen Maintenance Ticket?</h3>
+              <h3 className="text-base font-bold text-ink">
+                Reopen Maintenance Ticket?
+              </h3>
               <p className="text-xs text-mute leading-relaxed">
-                Is ticket <strong className="text-indigo-500">KX-{confirmReopenTarget.id}</strong>{" "}
-                still malfunctioning or unresolved? Reopening will notify campus maintenance to
-                re-inspect the issue.
+                Is ticket{" "}
+                <strong className="text-indigo-500">
+                  KX-{confirmReopenTarget.id}
+                </strong>{" "}
+                still malfunctioning or unresolved? Reopening will notify campus
+                maintenance to re-inspect the issue.
               </p>
             </div>
 

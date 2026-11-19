@@ -53,18 +53,25 @@ export interface ResolverResponse {
 
 export interface AdminAnalyticsResponse {
   totalIssues: number;
-  reported: number;
-  assigned: number;
-  inProgress: number;
-  resolved: number;
-  closed: number;
-  reopened: number;
+  reportedIssues?: number;
+  assignedIssues?: number;
+  inProgressIssues?: number;
+  resolvedIssues?: number;
+  closedIssues?: number;
+  reopenedIssues?: number;
+  reported?: number;
+  assigned?: number;
+  inProgress?: number;
+  resolved?: number;
+  closed?: number;
+  reopened?: number;
 }
 
 export interface AnalyticsGroupResponse {
   id: number;
   name: string;
-  count: number;
+  issueCount: number;
+  count?: number;
 }
 
 export interface AdminUserResponse {
@@ -231,9 +238,22 @@ export const api = {
     getAll: (): Promise<CategoryResponse[]> =>
       request<CategoryResponse[]>("/api/categories", { headers: authHeaders() }),
 
-    assignHead: (categoryId: number, userId: number): Promise<CategoryResponse> =>
-      request<CategoryResponse>(`/api/categories/${categoryId}/head/${userId}`, {
+    assignHead: (categoryId: number, userId: number | null): Promise<CategoryResponse> => {
+      if (!userId || userId <= 0) {
+        return request<CategoryResponse>(`/api/categories/${categoryId}/head`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        });
+      }
+      return request<CategoryResponse>(`/api/categories/${categoryId}/head/${userId}`, {
         method: "PUT",
+        headers: authHeaders(),
+      });
+    },
+
+    removeHead: (categoryId: number): Promise<CategoryResponse> =>
+      request<CategoryResponse>(`/api/categories/${categoryId}/head`, {
+        method: "DELETE",
         headers: authHeaders(),
       }),
   },

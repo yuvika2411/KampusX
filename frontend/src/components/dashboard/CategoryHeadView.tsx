@@ -81,8 +81,13 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
       msg.toLowerCase().includes("authentication required") ||
       msg.toLowerCase().includes("unauthorized")
     ) {
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-        window.location.assign(window.location.origin + "/login?next=/dashboard");
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/login")
+      ) {
+        window.location.assign(
+          window.location.origin + "/login?next=/dashboard",
+        );
       }
       return true;
     }
@@ -106,7 +111,10 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
       })
       .catch((err) => {
         if (!handleAuthRedirect(err)) {
-          const message = err instanceof Error ? err.message : "Failed to load department data";
+          const message =
+            err instanceof Error
+              ? err.message
+              : "Failed to load department data";
           setError(message);
         }
       })
@@ -132,7 +140,11 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
         .then((res) => setResolvers(res || []))
         .catch((err) => {
           if (!handleAuthRedirect(err)) {
-            setModalError(err instanceof Error ? err.message : "Failed to load available resolvers");
+            setModalError(
+              err instanceof Error
+                ? err.message
+                : "Failed to load available resolvers",
+            );
           }
         })
         .finally(() => setResolversLoading(false));
@@ -151,7 +163,7 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
       (c) =>
         c.categoryHeadId !== undefined &&
         c.categoryHeadId !== null &&
-        Number(c.categoryHeadId) === Number(user.id)
+        Number(c.categoryHeadId) === Number(user.id),
     );
   }, [categories, user.id]);
 
@@ -173,9 +185,16 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
     setModalError(null);
 
     try {
-      await api.issues.assignResolver(assigningIssueId, Number(selectedResolverId));
-      const chosenResolver = resolvers.find((r) => r.id === Number(selectedResolverId));
-      const resolverName = chosenResolver ? chosenResolver.name : `#${selectedResolverId}`;
+      await api.issues.assignResolver(
+        assigningIssueId,
+        Number(selectedResolverId),
+      );
+      const chosenResolver = resolvers.find(
+        (r) => r.id === Number(selectedResolverId),
+      );
+      const resolverName = chosenResolver
+        ? chosenResolver.name
+        : `#${selectedResolverId}`;
 
       setActionMessage({
         type: "success",
@@ -185,7 +204,8 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
       loadData();
     } catch (err: unknown) {
       if (!handleAuthRedirect(err)) {
-        const rawMsg = err instanceof Error ? err.message : "Failed to assign resolver";
+        const rawMsg =
+          err instanceof Error ? err.message : "Failed to assign resolver";
         let friendlyMsg = rawMsg;
         if (
           rawMsg.includes("403") ||
@@ -194,8 +214,12 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
         ) {
           friendlyMsg =
             "Access Denied (403): You can only assign resolvers to tickets in your assigned department.";
-        } else if (rawMsg.includes("404") || rawMsg.toLowerCase().includes("not found")) {
-          friendlyMsg = "Not Found (404): The selected ticket or resolver was not found.";
+        } else if (
+          rawMsg.includes("404") ||
+          rawMsg.toLowerCase().includes("not found")
+        ) {
+          friendlyMsg =
+            "Not Found (404): The selected ticket or resolver was not found.";
         } else if (
           rawMsg.includes("400") ||
           rawMsg.toLowerCase().includes("bad request") ||
@@ -213,22 +237,25 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
 
   // Metrics counts (REOPENED tickets are counted in "Needs resolver")
   const unassignedCount = issues.filter(
-    (i) => i.status === "REPORTED" || i.status === "REOPENED"
+    (i) => i.status === "REPORTED" || i.status === "REOPENED",
   ).length;
   const inProgressCount = issues.filter(
-    (i) => i.status === "IN_PROGRESS" || i.status === "ASSIGNED"
+    (i) => i.status === "IN_PROGRESS" || i.status === "ASSIGNED",
   ).length;
   const resolvedCount = issues.filter(
-    (i) => i.status === "RESOLVED" || i.status === "CLOSED"
+    (i) => i.status === "RESOLVED" || i.status === "CLOSED",
   ).length;
 
   // Filtered issues list
   const filteredIssues = useMemo(() => {
     return issues.filter((i) => {
       if (filterStatus === "ALL") return true;
-      if (filterStatus === "UNASSIGNED") return i.status === "REPORTED" || i.status === "REOPENED";
-      if (filterStatus === "IN_PROGRESS") return i.status === "IN_PROGRESS" || i.status === "ASSIGNED";
-      if (filterStatus === "RESOLVED") return i.status === "RESOLVED" || i.status === "CLOSED";
+      if (filterStatus === "UNASSIGNED")
+        return i.status === "REPORTED" || i.status === "REOPENED";
+      if (filterStatus === "IN_PROGRESS")
+        return i.status === "IN_PROGRESS" || i.status === "ASSIGNED";
+      if (filterStatus === "RESOLVED")
+        return i.status === "RESOLVED" || i.status === "CLOSED";
       return true;
     });
   }, [issues, filterStatus]);
@@ -334,7 +361,7 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-ink tracking-tight">
-              Welcome, {user.name || "Category Head"}!
+              Welcome back, {user.name || "Category Head"}!
             </h1>
 
             {/* Department Category Chips */}
@@ -359,7 +386,8 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
           </div>
 
           <p className="text-xs sm:text-sm text-mute mt-1.5">
-            Review incoming maintenance tickets for your category and assign a resolver.
+            Review incoming maintenance tickets for your category and assign a
+            resolver.
           </p>
         </div>
 
@@ -401,7 +429,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
           <span className="text-2xl sm:text-3xl font-black text-ink mt-1 block">
             {issues.length}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Total logged in department</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Total logged in department
+          </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-card border border-line shadow-xs">
@@ -411,7 +441,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
           <span className="text-2xl sm:text-3xl font-black text-amber-500 mt-1 block">
             {unassignedCount}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Waiting for a resolver</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Waiting for a resolver
+          </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-card border border-line shadow-xs">
@@ -421,7 +453,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
           <span className="text-2xl sm:text-3xl font-black text-indigo-500 mt-1 block">
             {inProgressCount}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Active work in progress</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Active work in progress
+          </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-card border border-line shadow-xs">
@@ -431,7 +465,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
           <span className="text-2xl sm:text-3xl font-black text-emerald-500 mt-1 block">
             {resolvedCount}
           </span>
-          <span className="text-[11px] text-mute mt-0.5 block">Successfully resolved</span>
+          <span className="text-[11px] text-mute mt-0.5 block">
+            Successfully resolved
+          </span>
         </div>
       </div>
 
@@ -473,15 +509,23 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
         {loading ? (
           <div className="py-20 text-center text-mute flex flex-col items-center justify-center gap-3 rounded-2xl bg-card border border-line">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-            <span className="text-sm font-medium text-ink">Loading department queue…</span>
-            <span className="text-xs text-mute">Synchronizing category maintenance tickets</span>
+            <span className="text-sm font-medium text-ink">
+              Loading department queue…
+            </span>
+            <span className="text-xs text-mute">
+              Synchronizing category maintenance tickets
+            </span>
           </div>
         ) : error ? (
           /* STATE B: ERROR WITH RETRY */
           <div className="p-8 sm:p-10 rounded-2xl bg-card border border-rose-500/30 text-center space-y-3 shadow-xs">
             <AlertCircle className="w-10 h-10 mx-auto text-rose-500" />
-            <h3 className="text-base font-bold text-ink">Failed to load department queue</h3>
-            <p className="text-xs text-mute max-w-md mx-auto leading-relaxed">{error}</p>
+            <h3 className="text-base font-bold text-ink">
+              Failed to load department queue
+            </h3>
+            <p className="text-xs text-mute max-w-md mx-auto leading-relaxed">
+              {error}
+            </p>
             <div className="pt-2">
               <button
                 onClick={loadData}
@@ -502,9 +546,10 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
               No category assigned. Ask an administrator.
             </h3>
             <p className="text-xs text-mute max-w-lg mx-auto leading-relaxed">
-              Your account holds the Category Head role, but an administrator has not yet linked you
-              to a campus department. You will see incoming maintenance tickets as soon as an
-              administrator links your profile to a category in the Admin Categories tab.
+              Your account holds the Category Head role, but an administrator
+              has not yet linked you to a campus department. You will see
+              incoming maintenance tickets as soon as an administrator links
+              your profile to a category in the Admin Categories tab.
             </p>
           </div>
         ) : filteredIssues.length === 0 ? (
@@ -512,7 +557,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
           <div className="p-12 rounded-2xl bg-card border border-line text-center text-mute shadow-xs">
             <Inbox className="w-10 h-10 mx-auto mb-2 opacity-30 text-indigo-500" />
             <p className="text-sm font-semibold text-ink">
-              {filterStatus === "ALL" ? "Department queue is clear" : "No tickets matching this filter"}
+              {filterStatus === "ALL"
+                ? "Department queue is clear"
+                : "No tickets matching this filter"}
             </p>
             <p className="text-xs mt-1">
               {filterStatus === "ALL"
@@ -529,7 +576,8 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
               issue.status === "REOPENED" ||
               issue.status === "ASSIGNED" ||
               issue.status === "IN_PROGRESS";
-            const isReassign = issue.status === "ASSIGNED" || issue.status === "IN_PROGRESS";
+            const isReassign =
+              issue.status === "ASSIGNED" || issue.status === "IN_PROGRESS";
 
             return (
               <div
@@ -569,7 +617,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
                       </span>
                     )}
 
-                    <span>Reporter: {issue.reporterName || "Campus Student"}</span>
+                    <span>
+                      Reporter: {issue.reporterName || "Campus Student"}
+                    </span>
 
                     <span className="flex items-center gap-1 font-semibold text-indigo-500">
                       <ThumbsUp size={11} />
@@ -586,7 +636,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
                       className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-gradient hover:opacity-95 shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <UserCheck size={14} />
-                      <span>{isReassign ? "Reassign Resolver" : "Assign Resolver"}</span>
+                      <span>
+                        {isReassign ? "Reassign Resolver" : "Assign Resolver"}
+                      </span>
                     </button>
                   ) : (
                     <span className="text-xs font-semibold text-emerald-500 flex items-center gap-1">
@@ -638,7 +690,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
             {modalError && (
               <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
                 <AlertCircle size={15} className="shrink-0 mt-0.5" />
-                <span className="leading-relaxed font-medium">{modalError}</span>
+                <span className="leading-relaxed font-medium">
+                  {modalError}
+                </span>
               </div>
             )}
 
@@ -649,8 +703,9 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
                 <div className="space-y-0.5">
                   <p className="font-semibold">No active resolvers available</p>
                   <p className="text-[11px] opacity-90 leading-relaxed">
-                    There are currently no active users with the Resolver role. Ask a system
-                    administrator to register or activate resolvers in the Admin dashboard.
+                    There are currently no active users with the Resolver role.
+                    Ask a system administrator to register or activate resolvers
+                    in the Admin dashboard.
                   </p>
                 </div>
               </div>
@@ -679,8 +734,6 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
                   disabled={resolversLoading || resolvers.length === 0}
                   loading={resolversLoading}
                 />
-
-            
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2.5">
@@ -693,7 +746,11 @@ export default function CategoryHeadView({ user }: CategoryHeadViewProps) {
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingAssign || !selectedResolverId || resolvers.length === 0}
+                  disabled={
+                    submittingAssign ||
+                    !selectedResolverId ||
+                    resolvers.length === 0
+                  }
                   className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-brand-gradient hover:opacity-95 shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
                   {submittingAssign ? (
