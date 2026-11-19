@@ -10,7 +10,6 @@ services:
       - "5436:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d kampusX"]
       interval: 10s
@@ -35,6 +34,7 @@ services:
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      BREVO_API_KEY: ${BREVO_API_KEY}
 
 volumes:
   postgres_data:
