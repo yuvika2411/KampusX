@@ -69,8 +69,8 @@ class AuthSecurityIntegrationTest {
                 .andExpect(header().string(
                         HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
                         org.hamcrest.Matchers.allOf(
-                                org.hamcrest.Matchers.containsString("Content-Type"),
-                                org.hamcrest.Matchers.containsString("Authorization"))));
+                                org.hamcrest.Matchers.containsString("content-type"),
+                                org.hamcrest.Matchers.containsString("authorization"))));
     }
 
     @Test
