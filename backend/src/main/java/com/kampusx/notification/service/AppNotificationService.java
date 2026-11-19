@@ -1,5 +1,6 @@
 package com.kampusx.notification.service;
 
+import com.kampusx.common.websocket.WebSocketEventPublisher;
 import com.kampusx.notification.dto.NotificationResponse;
 import com.kampusx.notification.entity.AppNotification;
 import com.kampusx.notification.repository.AppNotificationRepository;
@@ -18,6 +19,7 @@ public class AppNotificationService {
 
     private final AppNotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Transactional
     public void notifyUser(
@@ -35,6 +37,10 @@ public class AppNotificationService {
         notification.setMessage(message);
 
         notificationRepository.save(notification);
+
+        if (user.getEmail() != null) {
+            webSocketEventPublisher.publishNotification(user.getEmail(), toResponse(notification));
+        }
     }
 
     @Transactional(readOnly = true)

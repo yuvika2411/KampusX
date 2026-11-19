@@ -1,4 +1,4 @@
-import { authHeaders, request } from "./auth";
+import { authHeaders, request, uploadRequest } from "./auth";
 
 export type IssueStatus = "REPORTED" | "ASSIGNED" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "REOPENED";
 export type IssuePriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
@@ -126,6 +126,7 @@ export interface IssueImageResponse {
   id: number;
   issueId: number;
   imageUrl: string;
+  imageType?: "REPORTED" | "RESOLUTION";
 }
 
 export const api = {
@@ -224,6 +225,25 @@ export const api = {
 
     getImages: (issueId: number): Promise<IssueImageResponse[]> =>
       request<IssueImageResponse[]>(`/api/issues/${issueId}/images`, {
+        headers: authHeaders(),
+      }),
+
+    uploadImage: (
+      issueId: number,
+      file: File,
+      type: "REPORTED" | "RESOLUTION" = "REPORTED"
+    ): Promise<IssueImageResponse> => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return uploadRequest<IssueImageResponse>(
+        `/api/issues/${issueId}/images?type=${type}`,
+        formData
+      );
+    },
+
+    deleteImage: (imageId: number): Promise<void> =>
+      request<void>(`/api/issues/images/${imageId}`, {
+        method: "DELETE",
         headers: authHeaders(),
       }),
 

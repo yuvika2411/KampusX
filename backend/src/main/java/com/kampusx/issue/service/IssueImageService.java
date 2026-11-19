@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.kampusx.issue.entity.Issue;
 import com.kampusx.issue.entity.IssueImage;
+import com.kampusx.issue.entity.IssueImageType;
 import com.kampusx.issue.repository.IssueImageRepository;
 import com.kampusx.issue.repository.IssueRepository;
 import com.kampusx.user.entity.User;
@@ -38,7 +39,8 @@ public class IssueImageService {
     public record ImageResponse(
             Long id,
             Long issueId,
-            String imageUrl
+            String imageUrl,
+            IssueImageType imageType
     ) {}
 
     public ImageResponse upload(
@@ -46,16 +48,40 @@ public class IssueImageService {
             MultipartFile file,
             String email
     ) {
+        return upload(issueId, file, email, IssueImageType.REPORTED);
+    }
+
+    public ImageResponse upload(
+            Long issueId,
+            MultipartFile file,
+            String email,
+            IssueImageType imageType
+    ) {
         User user = getUser(email);
 
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Issue not found"));
 
-        if (!issue.getReporter().getId().equals(user.getId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Only the reporter can upload images");
+        final IssueImageType resolvedType =
+                imageType != null ? imageType : IssueImageType.REPORTED;
+
+        boolean isAdmin = "ADMIN".equals(user.getRole().name());
+
+        if (resolvedType == IssueImageType.REPORTED) {
+            if (!issue.getReporter().getId().equals(user.getId()) && !isAdmin) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Only the reporter can upload issue images");
+            }
+        } else if (resolvedType == IssueImageType.RESOLUTION) {
+            boolean isAssignedResolver = issue.getResolver() != null
+                    && issue.getResolver().getId().equals(user.getId());
+            if (!isAssignedResolver && !isAdmin) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Only the assigned resolver can upload resolution evidence");
+            }
         }
 
         if (file == null || file.isEmpty()) {
@@ -113,6 +139,7 @@ public class IssueImageService {
                 image.setIssue(issue);
                 image.setPublicId(savedPublicId);
                 image.setImageUrl(imageUrl);
+                image.setImageType(resolvedType);
 
                 imageRepository.save(image);
 
@@ -161,7 +188,12 @@ public class IssueImageService {
 
         boolean admin = user.getRole().name().equals("ADMIN");
 
-        if (!reporter && !admin) {
+        boolean resolver = image.getIssue().getResolver() != null
+                && image.getIssue().getResolver().getId().equals(user.getId());
+
+        boolean allowed = admin || (image.getImageType() == IssueImageType.RESOLUTION ? resolver : reporter);
+
+        if (!allowed) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Not allowed to delete this image");
@@ -199,7 +231,8 @@ public class IssueImageService {
         return new ImageResponse(
                 image.getId(),
                 image.getIssue().getId(),
-                image.getImageUrl()
+                image.getImageUrl(),
+                image.getImageType() != null ? image.getImageType() : IssueImageType.REPORTED
         );
     }
 

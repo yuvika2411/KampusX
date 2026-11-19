@@ -1,6 +1,7 @@
 package com.kampusx.issue.service;
 
 import com.kampusx.common.ResourceNotFoundException;
+import com.kampusx.common.websocket.WebSocketEventPublisher;
 import com.kampusx.issue.dto.CreateCommentRequest;
 import com.kampusx.issue.dto.IssueCommentResponse;
 import com.kampusx.issue.entity.Issue;
@@ -21,6 +22,7 @@ public class IssueCommentService {
     private final IssueCommentRepository issueCommentRepository;
     private final IssueRepository issueRepository;
     private final UserRepository userRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     public IssueCommentResponse addComment(
             Long issueId,
@@ -41,7 +43,10 @@ public class IssueCommentService {
         IssueComment savedComment =
                 issueCommentRepository.save(comment);
 
-        return toResponse(savedComment);
+        IssueCommentResponse response = toResponse(savedComment);
+        webSocketEventPublisher.publishComment(issueId, response);
+
+        return response;
     }
 
     public List<IssueCommentResponse> getComments(Long issueId) {

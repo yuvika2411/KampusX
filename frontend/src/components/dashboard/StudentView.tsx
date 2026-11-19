@@ -17,6 +17,7 @@ import {
   FolderOpen,
   RefreshCw,
   X,
+  Upload,
   MessageSquare,
   Image as ImageIcon,
   ChevronLeft,
@@ -47,6 +48,8 @@ import {
   PageResponse,
 } from "@/lib/api";
 import { AuthSession } from "@/lib/auth";
+import { useWebSocketSubscription } from "@/lib/websocket";
+import LiveStatusIndicator from "@/components/ui/LiveStatusIndicator";
 
 interface StudentViewProps {
   user: AuthSession;
@@ -211,6 +214,39 @@ export default function StudentView({
     floorRoom?: string;
     description?: string;
   }>({});
+
+  // Optional image attachment state for new issue reporting
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+
+  const handleFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    const validFiles: File[] = [];
+
+    Array.from(e.target.files).forEach((file) => {
+      if (!allowed.includes(file.type)) {
+        setFormError("Only JPG, JPEG, PNG, and WebP images are supported.");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setFormError(`Image "${file.name}" exceeds the 5 MB size limit.`);
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    const updated = [...selectedFiles, ...validFiles].slice(0, 5);
+    setSelectedFiles(updated);
+    setFilePreviews(updated.map((f) => URL.createObjectURL(f)));
+  };
+
+  const handleRemoveFile = (index: number) => {
+    const updated = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(updated);
+    setFilePreviews(updated.map((f) => URL.createObjectURL(f)));
+  };
 
   // Fetch My Issues
   const loadMyIssues = useCallback(() => {
@@ -388,6 +424,64 @@ export default function StudentView({
       group: loc.locationType || "OTHER_FACILITY",
     }));
   }, [locations]);
+
+  // Real-time WebSocket subscription to Campus Feed
+  useWebSocketSubscription<IssueResponse>("/topic/feed", (event) => {
+    if (!event?.payload) return;
+    const issue = event.payload;
+    setFeedData((prev) => {
+      if (!prev) return prev;
+      const idx = prev.content.findIndex((i) => i.id === issue.id);
+      if (idx !== -1) {
+        const copy = [...prev.content];
+        copy[idx] = { ...copy[idx], ...issue };
+        return { ...prev, content: copy };
+      }
+      if (event.type === "ISSUE_CREATED") {
+        return {
+          ...prev,
+          content: [issue, ...prev.content],
+          totalElements: prev.totalElements + 1,
+        };
+      }
+      return prev;
+    });
+  });
+
+  // Real-time WebSocket subscription to Student's Queue
+  useWebSocketSubscription<IssueResponse>("/user/queue/issues", (event) => {
+    if (!event?.payload) return;
+    const issue = event.payload;
+    setMyIssues((prev) => {
+      const idx = prev.findIndex((i) => i.id === issue.id);
+      if (idx !== -1) {
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], ...issue };
+        return copy;
+      }
+      if (event.type === "ISSUE_CREATED") {
+        return [issue, ...prev];
+      }
+      return prev;
+    });
+
+    setSelectedIssue((prev) =>
+      prev && prev.id === issue.id ? { ...prev, ...issue } : prev,
+    );
+  });
+
+  // Real-time WebSocket subscription to comments on the active issue
+  useWebSocketSubscription<IssueCommentResponse>(
+    selectedIssue ? `/topic/issues/${selectedIssue.id}/comments` : null,
+    (event) => {
+      if (event?.payload) {
+        setDetailComments((prev) => {
+          if (prev.some((c) => c.id === event.payload.id)) return prev;
+          return [...prev, event.payload];
+        });
+      }
+    },
+  );
 
   // Load issue detail extras (images & comments) when an issue is selected
   const openIssueDetail = (issue: IssueResponse) => {
@@ -650,13 +744,30 @@ export default function StudentView({
     setFormSuccess("");
 
     try {
-      await api.issues.createIssue({
+      const created = await api.issues.createIssue({
         title: formTitle.trim(),
         description: formDescription.trim(),
         categoryId: Number(formCategoryId),
         locationId: Number(formLocationId),
         floorRoom: formFloorRoom.trim(),
       });
+
+      if (selectedFiles.length > 0) {
+        for (let i = 0; i < selectedFiles.length; i++) {
+          setUploadProgress(
+            `Uploading attachment ${i + 1} of ${selectedFiles.length}...`,
+          );
+          try {
+            await api.issues.uploadImage(
+              created.id,
+              selectedFiles[i],
+              "REPORTED",
+            );
+          } catch (uploadErr) {
+            console.warn("Failed to upload image", uploadErr);
+          }
+        }
+      }
 
       setFormSuccess(
         "Issue submitted successfully! Your campus desk has been notified.",
@@ -666,6 +777,9 @@ export default function StudentView({
       setFormCategoryId("");
       setFormLocationId("");
       setFormFloorRoom("");
+      setSelectedFiles([]);
+      setFilePreviews([]);
+      setUploadProgress(null);
       setFieldErrors({});
       loadMyIssues();
       setTimeout(() => {
@@ -1002,46 +1116,52 @@ export default function StudentView({
       </div>
 
       {/* Navigation Tabs Header */}
-      <div className="flex border-b border-line gap-2 overflow-x-auto pb-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab("my")}
-          className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
-            activeTab === "my"
-              ? "border-indigo-500 text-indigo-500"
-              : "border-transparent text-mute hover:text-ink"
-          }`}
-        >
-          <FolderOpen size={16} />
-          <span>My Issues ({myIssues.length})</span>
-        </button>
+      <div className="flex items-center justify-between border-b border-line gap-2 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("my")}
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === "my"
+                ? "border-indigo-500 text-indigo-500"
+                : "border-transparent text-mute hover:text-ink"
+            }`}
+          >
+            <FolderOpen size={16} />
+            <span>My Issues ({myIssues.length})</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("feed")}
-          className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
-            activeTab === "feed"
-              ? "border-indigo-500 text-indigo-500"
-              : "border-transparent text-mute hover:text-ink"
-          }`}
-        >
-          <Sparkles size={16} />
-          <span>Campus Feed</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("feed")}
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === "feed"
+                ? "border-indigo-500 text-indigo-500"
+                : "border-transparent text-mute hover:text-ink"
+            }`}
+          >
+            <Sparkles size={16} />
+            <span>Campus Feed</span>
+          </button>
 
-        {/* Tab Header (Button 2 of at most 2 entry points) */}
-        <button
-          type="button"
-          onClick={() => setActiveTab("report")}
-          className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
-            activeTab === "report"
-              ? "border-indigo-500 text-indigo-500"
-              : "border-transparent text-mute hover:text-ink"
-          }`}
-        >
-          <PlusCircle size={16} />
-          <span>Report an Issue</span>
-        </button>
+          {/* Tab Header (Button 2 of at most 2 entry points) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("report")}
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === "report"
+                ? "border-indigo-500 text-indigo-500"
+                : "border-transparent text-mute hover:text-ink"
+            }`}
+          >
+            <PlusCircle size={16} />
+            <span>Report an Issue</span>
+          </button>
+        </div>
+
+        <div className="hidden sm:flex items-center shrink-0 pr-1">
+          <LiveStatusIndicator />
+        </div>
       </div>
 
       {/* ========================================================================= */}
@@ -1761,6 +1881,85 @@ export default function StudentView({
               )}
             </div>
 
+            {/* Optional Image Attachments */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-ink">
+                  Attach Images <span className="text-mute font-normal">(Optional)</span>
+                </label>
+                <span className="text-[11px] text-mute">
+                  {selectedFiles.length}/5 selected
+                </span>
+              </div>
+
+              {/* Upload Dropzone */}
+              <div className="border border-dashed border-line hover:border-[#818cf8] rounded-xl p-4 bg-soft/50 text-center transition-colors">
+                <input
+                  type="file"
+                  id="student-image-upload"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFilesSelect}
+                  className="hidden"
+                  disabled={formSubmitting || selectedFiles.length >= 5}
+                />
+                <label
+                  htmlFor="student-image-upload"
+                  className={`inline-flex flex-col items-center gap-1.5 cursor-pointer ${
+                    formSubmitting || selectedFiles.length >= 5
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                    <Upload size={16} />
+                  </div>
+                  <span className="text-xs font-semibold text-ink">
+                    Click to browse photos
+                  </span>
+                  <span className="text-[11px] text-mute">
+                    Supports JPG, PNG, WebP (max 5 MB each, up to 5 photos)
+                  </span>
+                </label>
+              </div>
+
+              {/* Preview thumbnails */}
+              {filePreviews.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                  {filePreviews.map((preview, idx) => (
+                    <div
+                      key={idx}
+                      className="relative rounded-xl overflow-hidden border border-line aspect-video group bg-black/5"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={preview}
+                        alt={`Preview ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(idx)}
+                        disabled={formSubmitting}
+                        className="absolute top-1 right-1 p-1 rounded-full bg-black/75 hover:bg-black text-white transition-opacity shadow-xs cursor-pointer"
+                        title="Remove photo"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload progress message */}
+              {uploadProgress && (
+                <div className="pt-1 text-xs font-semibold text-indigo-500 flex items-center gap-1.5 animate-pulse">
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>{uploadProgress}</span>
+                </div>
+              )}
+            </div>
+
             <div className="pt-2 flex items-center justify-end gap-3">
               <button
                 type="button"
@@ -1920,45 +2119,84 @@ export default function StudentView({
               </div>
 
               {/* Photos / Images Section (GET /api/issues/{id}/images) */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-mute flex items-center gap-1.5">
-                    <ImageIcon size={14} />
-                    Attached Images
-                  </span>
-                  {detailImagesLoading && (
-                    <Loader2
-                      size={13}
-                      className="animate-spin text-indigo-500"
-                    />
+              <div className="space-y-3 pt-1">
+                {/* 1. Reported Photos */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-mute flex items-center gap-1.5">
+                      <ImageIcon size={14} />
+                      Reported Photos ({detailImages.filter((i) => !i.imageType || i.imageType === "REPORTED").length})
+                    </span>
+                    {detailImagesLoading && (
+                      <Loader2
+                        size={13}
+                        className="animate-spin text-indigo-500"
+                      />
+                    )}
+                  </div>
+
+                  {detailImagesLoading ? (
+                    <div className="h-16 rounded-xl bg-soft animate-pulse" />
+                  ) : detailImages.filter((i) => !i.imageType || i.imageType === "REPORTED").length === 0 ? (
+                    <p className="text-xs text-mute italic bg-soft/50 p-2.5 rounded-xl border border-line">
+                      No photos attached with initial report.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {detailImages
+                        .filter((i) => !i.imageType || i.imageType === "REPORTED")
+                        .map((img) => (
+                          <div
+                            key={img.id}
+                            onClick={() => setImagePreviewUrl(img.imageUrl)}
+                            className="aspect-video relative rounded-lg overflow-hidden border border-line bg-black/10 hover:opacity-90 transition-opacity cursor-pointer group"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={img.imageUrl}
+                              alt="Issue attachment"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
+                              View
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   )}
                 </div>
 
-                {detailImagesLoading ? (
-                  <div className="h-20 rounded-xl bg-soft animate-pulse" />
-                ) : detailImages.length === 0 ? (
-                  <p className="text-xs text-mute italic bg-soft/50 p-3 rounded-xl border border-line">
-                    No photos attached to this ticket.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {detailImages.map((img) => (
-                      <div
-                        key={img.id}
-                        onClick={() => setImagePreviewUrl(img.imageUrl)}
-                        className="aspect-video relative rounded-lg overflow-hidden border border-line bg-black/10 hover:opacity-90 transition-opacity cursor-pointer group"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img.imageUrl}
-                          alt="Issue attachment"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
-                          View
-                        </div>
-                      </div>
-                    ))}
+                {/* 2. Resolution Evidence (Uploaded by Resolver) */}
+                {detailImages.some((i) => i.imageType === "RESOLUTION") && (
+                  <div className="space-y-2 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                        <CheckCircle2 size={14} />
+                        Resolution Evidence ({detailImages.filter((i) => i.imageType === "RESOLUTION").length})
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {detailImages
+                        .filter((i) => i.imageType === "RESOLUTION")
+                        .map((img) => (
+                          <div
+                            key={img.id}
+                            onClick={() => setImagePreviewUrl(img.imageUrl)}
+                            className="aspect-video relative rounded-lg overflow-hidden border border-emerald-500/40 bg-black/10 hover:opacity-90 transition-opacity cursor-pointer group"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={img.imageUrl}
+                              alt="Resolution evidence"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
+                              View Proof
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 )}
               </div>

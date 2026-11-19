@@ -1,5 +1,8 @@
 package com.kampusx.issue.service;
 
+import com.kampusx.common.BadRequestException;
+import com.kampusx.common.ResourceNotFoundException;
+import com.kampusx.common.websocket.WebSocketEventPublisher;
 import com.kampusx.issue.dto.CreateIssueRequest;
 import com.kampusx.issue.dto.IssueResponse;
 import com.kampusx.issue.entity.Category;
@@ -28,8 +31,6 @@ import java.util.*;
 import com.kampusx.notification.service.AppNotificationService;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
-import com.kampusx.common.ResourceNotFoundException;
-import com.kampusx.common.BadRequestException;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +43,7 @@ public class IssueService {
     private final IssueVoteRepository issueVoteRepository;
     private final IssueCommentRepository issueCommentRepository;
     private final AppNotificationService notificationService;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     public IssueResponse createIssue(CreateIssueRequest request) {
 
@@ -72,8 +74,10 @@ public class IssueService {
         issue.setReporter(reporter);
 
         Issue savedIssue = issueRepository.save(issue);
+        IssueResponse createdResponse = toResponse(savedIssue);
+        webSocketEventPublisher.publishIssueCreated(createdResponse, reporter.getEmail());
 
-        return toResponse(savedIssue);
+        return createdResponse;
     }
 
     public IssueResponse updateIssue(Long id, CreateIssueRequest request) {
@@ -96,8 +100,12 @@ public class IssueService {
         }
 
         Issue updatedIssue = issueRepository.save(issue);
+        IssueResponse updatedResponse = toResponse(updatedIssue);
+        String resolverEmail = updatedIssue.getResolver() != null ? updatedIssue.getResolver().getEmail() : null;
+        String reporterEmail = updatedIssue.getReporter() != null ? updatedIssue.getReporter().getEmail() : null;
+        webSocketEventPublisher.publishIssueStatusChanged(updatedResponse, resolverEmail, reporterEmail);
 
-        return toResponse(updatedIssue);
+        return updatedResponse;
     }
 
     private Long getCurrentUserId() {
@@ -306,7 +314,12 @@ public class IssueService {
                         + " status changed to " + newStatus + "."
         );
 
-        return toResponse(savedIssue);
+        IssueResponse statusResponse = toResponse(savedIssue);
+        String resolverEmail = savedIssue.getResolver() != null ? savedIssue.getResolver().getEmail() : null;
+        String reporterEmail = savedIssue.getReporter() != null ? savedIssue.getReporter().getEmail() : null;
+        webSocketEventPublisher.publishIssueStatusChanged(statusResponse, resolverEmail, reporterEmail);
+
+        return statusResponse;
     }
 
     @Transactional
@@ -339,7 +352,12 @@ public class IssueService {
                         + " has been closed by the student."
         );
 
-        return toResponse(savedIssue);
+        IssueResponse closedResponse = toResponse(savedIssue);
+        String resolverEmail = savedIssue.getResolver() != null ? savedIssue.getResolver().getEmail() : null;
+        String reporterEmail = savedIssue.getReporter() != null ? savedIssue.getReporter().getEmail() : null;
+        webSocketEventPublisher.publishIssueStatusChanged(closedResponse, resolverEmail, reporterEmail);
+
+        return closedResponse;
     }
 
     @Transactional
@@ -375,7 +393,12 @@ public class IssueService {
                         + " has been reopened by the student."
         );
 
-        return toResponse(savedIssue);
+        IssueResponse reopenedResponse = toResponse(savedIssue);
+        String resolverEmail = savedIssue.getResolver() != null ? savedIssue.getResolver().getEmail() : null;
+        String reporterEmail = savedIssue.getReporter() != null ? savedIssue.getReporter().getEmail() : null;
+        webSocketEventPublisher.publishIssueStatusChanged(reopenedResponse, resolverEmail, reporterEmail);
+
+        return reopenedResponse;
     }
 
     @Transactional
@@ -435,7 +458,12 @@ public class IssueService {
                         + savedIssue.getId() + "."
         );
 
-        return toResponse(savedIssue);
+        IssueResponse assignedResponse = toResponse(savedIssue);
+        String resolverEmail = resolver.getEmail();
+        String reporterEmail = savedIssue.getReporter() != null ? savedIssue.getReporter().getEmail() : null;
+        webSocketEventPublisher.publishIssueAssigned(assignedResponse, resolverEmail, reporterEmail);
+
+        return assignedResponse;
     }
 
     public void deleteIssue( Long issueId){
