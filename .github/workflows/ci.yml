@@ -70,7 +70,7 @@ jobs:
       DB_URL: jdbc:postgresql://localhost:5432/kampusX
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_SECRET: S2FtcHVzWC1DSS1UZXN0LU9ubHktU2VjcmV0LTMyISE=
       MAIL_USERNAME: test@example.com
       MAIL_PASSWORD: test-password
       CLOUDINARY_CLOUD_NAME: test-cloud
@@ -91,3 +91,4 @@ jobs:
 
       - name: Build and Run Tests
         run: mvn -B clean verify
+
