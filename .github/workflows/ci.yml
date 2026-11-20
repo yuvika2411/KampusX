@@ -51,6 +51,7 @@ jobs:
       postgres:
         image: postgres:16
         env:
+	  SPRING_PROFILES_ACTIVE: test
           POSTGRES_DB: kampusX
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
