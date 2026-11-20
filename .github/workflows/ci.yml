@@ -41,8 +41,8 @@ jobs:
       - name: Build Next.js Application
         run: npm run build
 
+  
   # BACKEND BUILD AND TEST
-
   backend-build:
     name: Backend Build and Tests
     runs-on: ubuntu-latest
@@ -51,7 +51,6 @@ jobs:
       postgres:
         image: postgres:16
         env:
-	  SPRING_PROFILES_ACTIVE: test
           POSTGRES_DB: kampusX
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -71,6 +70,7 @@ jobs:
       DB_URL: jdbc:postgresql://localhost:5432/kampusX
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
+      SPRING_PROFILES_ACTIVE: test
       JWT_SECRET: S2FtcHVzWC1DSS1UZXN0LU9ubHktU2VjcmV0LTMyISE=
       MAIL_USERNAME: test@example.com
       MAIL_PASSWORD: test-password
@@ -92,4 +92,5 @@ jobs:
 
       - name: Build and Run Tests
         run: mvn -B clean verify
+
 
