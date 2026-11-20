@@ -22,8 +22,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
-        "spring.flyway.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=none"
+    "spring.flyway.enabled=true",
+    "spring.jpa.hibernate.ddl-auto=validate"
 })
 @AutoConfigureMockMvc
 class IssueSecurityIntegrationTest {
